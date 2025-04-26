@@ -1,4 +1,6 @@
 # CMake build artifacts
+build-vscode/
+build-clion/
 build/
 CMakeCache.txt
 CMakeFiles/

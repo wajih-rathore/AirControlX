@@ -16,22 +16,8 @@ find_package(SFML 2.5 COMPONENTS graphics window system REQUIRED)
 # Include directories
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
-# Explicitly list source files
-set(SOURCES
-    src/Aircraft.cpp
-    src/Airline.cpp
-    src/AirlinePortal.cpp
-    src/ATCScontroller.cpp
-    src/AVN.cpp
-    src/FlightsScheduler.cpp
-    src/LogEntry.cpp
-    src/Radar.cpp
-    src/Runway.cpp
-    src/StripePayment.cpp
-    src/Timer.cpp
-    src/VisualSimulator.cpp
-    src/main.cpp
-)
+# Dynamically collect all .cpp files in src/
+file(GLOB SOURCES "src/*.cpp")
 
 # Build executable into build/
 add_executable(aircontrolx ${SOURCES})

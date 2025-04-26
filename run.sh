@@ -1,8 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
+clear
+echo "Configuring AirControlX..."
+cmake -B build
 
-echo "Compiling AirControlX..."
-make clean
-make
+echo "Building AirControlX..."
+cmake --build build --target aircontrolx
 
 echo "Running AirControlX..."
-./aircontrolx
+./build/aircontrolx

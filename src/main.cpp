@@ -5,19 +5,19 @@
 #include <cstdlib>
 
 // Include all header files
-#include "include/Common.h"
-#include "include/Timer.h"
-#include "include/Aircraft.h"
-#include "include/Runway.h"
-#include "include/LogEntry.h"
-#include "include/VisualSimulator.h"
-#include "include/Radar.h"
-#include "include/ATCScontroller.h"
-#include "include/FlightsScheduler.h"
-#include "include/StripePayment.h"
-#include "include/AVN.h"
-#include "include/AirlinePortal.h"
-#include "include/Airline.h"
+#include "Common.h"
+#include "Aircraft.h"
+#include "Airline.h"
+#include "FlightsScheduler.h"
+#include "ATCScontroller.h"
+#include "Radar.h"
+#include "Runway.h"
+#include "Timer.h"
+#include "VisualSimulator.h"
+#include "AirlinePortal.h"
+#include "LogEntry.h"
+#include "AVN.h"
+#include "StripePayment.h"
 
 using namespace std;
 
@@ -79,7 +79,7 @@ void initializeAirlines()
     // Initialize each aircraft in each airline
     for (auto& airline : {&PIA, &AirBlue, &FedEx, &PakAirforce, &BlueDart, &AghaKhanAir}) 
     {
-        for (int i = 0; i < airline->aircrafts.size(); i++) 
+        for (size_t i = 0; i < airline->aircrafts.size(); i++) 
         {
             airline->aircrafts[i].Airline = airline->name;
             airline->aircrafts[i].type = airline->type;

@@ -124,6 +124,29 @@ void generateAVNsForViolations()
     // Implement generation of AVNs for violations
 }
 
+// Function to display a dummy menu on a clean terminal
+void displayDummyMenu() {
+    // Clear the terminal screen
+    #ifdef _WIN32
+        system("cls");
+    #else
+        system("clear");
+    #endif
+    
+    cout << "=======================================" << endl;
+    cout << "       AirControlX Terminal Menu       " << endl;
+    cout << "=======================================" << endl;
+    cout << "1. View Active Flights" << endl;
+    cout << "2. Check Runway Status" << endl;
+    cout << "3. Schedule New Flight" << endl;
+    cout << "4. Handle Emergency" << endl;
+    cout << "5. Monitor Airspace" << endl;
+    cout << "6. Generate Reports" << endl;
+    cout << "7. Exit" << endl;
+    cout << "=======================================" << endl;
+    cout << "Enter your choice: ";
+}
+
 int main() 
 {
     // Seed the random number generator
@@ -136,8 +159,15 @@ int main()
     cout << "AirControlX - Automated Air Traffic Control System" << endl;
     cout << "Module 1: System Rules & Restrictions" << endl;
     
-    // Setup basic simulation for 5 minutes
-    // To be completed...
+    // Display the dummy menu on a clean terminal
+    displayDummyMenu();
+    
+    // Wait for user input before exiting
+    int choice;
+    cin >> choice;
+    
+    cout << "You selected option " << choice << endl;
+    cout << "This is a dummy implementation. Functionality coming soon!" << endl;
     
     return 0;
 }

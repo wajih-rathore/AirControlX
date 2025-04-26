@@ -1,0 +1,17 @@
+# CMake build artifacts
+build/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+
+# Executable
+aircontrolx
+
+# Object files
+*.o
+
+# VS Code settings
+.vscode/
+
+# CLion settings
+.idea/

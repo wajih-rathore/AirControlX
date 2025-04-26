@@ -74,7 +74,7 @@ This will:
 1. **Clone the Repository**:
    ```bash
    git clone <repository-url>
-   cd AirControlX
+   cd OS-Project
    ```
 
 2. **Install VS Code Extensions**:

@@ -147,6 +147,7 @@ void displayDummyMenu() {
     cout << "Enter your choice: ";
 }
 
+/*
 int main() 
 {
     // Seed the random number generator
@@ -172,6 +173,7 @@ int main()
     return 0;
 }
 
+*/
 
 
 
@@ -185,7 +187,7 @@ and uncomment the below code, mere end pe toh chal raha hai
 
 
 
-/*
+
 #include <SFML/Graphics.hpp>
 
 int main()
@@ -222,4 +224,4 @@ int main()
     return 0;
 }
 
-*/
+///Hello Wajih

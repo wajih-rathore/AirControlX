@@ -15,6 +15,7 @@ Aircraft::Aircraft() {
     HasViolation = false;
     isFaulty = false;
     isActive = false;
+    position = make_pair(-1 , -1);
 }
 
 // Destructor for aircraft class

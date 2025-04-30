@@ -19,6 +19,7 @@ public:
     Timer timer;               // Timer for tracking flight events
     int speed;                 // Current speed in km/h
     int EmergencyNo;           // Emergency level (0 for no emergency)
+    pair<int, int> position;   //The Current (x, y) position for the plane 
     bool HasViolation;         // Flag for speed/rule violations
     bool isFaulty;             // Flag for faulty aircraft
     bool isActive;             // Flag for active flight

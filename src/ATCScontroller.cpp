@@ -3,13 +3,17 @@
 #include <ctime>
 using namespace std;
 
-// External declaration for runway objects defined in main.cpp
-extern RunwayClass Runway[3];
-
 ATCScontroller::ATCScontroller()
 {
     schedulingInterval = 1;  // Schedule every 1 second
     lastScheduleTime = time(NULL);
+    runwayManager = nullptr; // Initialize to nullptr, must be set later with setRunwayManager
+}
+
+// Set the runway manager reference
+void ATCScontroller::setRunwayManager(RunwayManager* rwManager)
+{
+    runwayManager = rwManager;
 }
 
 // Monitor flights in the airspace - called periodically from main
@@ -23,17 +27,34 @@ void ATCScontroller::monitorFlight()
         assignRunway();
         lastScheduleTime = currentTime;
     }
-    
 }
-
 
 // Assign runways to aircraft based on priority and availability
 void ATCScontroller::assignRunway()
 {
+    // Make sure we have a valid runway manager
+    if (!runwayManager)
+    {
+        // Oopsie! Someone forgot to set the runway manager. Let's whine about it.
+        cout << "ATCScontroller: No runway manager available! Can't assign runways." << endl;
+        return;
+    }
+    
     // Check runway availability first
-    bool rwyA_available = !Runway[0].isOccupied;
-    bool rwyB_available = !Runway[1].isOccupied;
-    bool rwyC_available = !Runway[2].isOccupied;
+    RunwayClass* rwyA = runwayManager->getRunwayByIndex(0); // RWY-A
+    RunwayClass* rwyB = runwayManager->getRunwayByIndex(1); // RWY-B
+    RunwayClass* rwyC = runwayManager->getRunwayByIndex(2); // RWY-C
+    
+    // Safety check - if any runway pointer is null, something's very wrong
+    if (!rwyA || !rwyB || !rwyC)
+    {
+        cout << "ATCScontroller: Missing runway in manager! Can't assign runways." << endl;
+        return;
+    }
+    
+    bool rwyA_available = !rwyA->isOccupied;
+    bool rwyB_available = !rwyB->isOccupied;
+    bool rwyC_available = !rwyC->isOccupied;
     
     // If no runways are available, nothing to do
     if (!rwyA_available && !rwyB_available && !rwyC_available)
@@ -50,7 +71,7 @@ void ATCScontroller::assignRunway()
         {
             // Emergency arrival - assign to RWY-A
             cout << "Emergency " << emergency->FlightNumber  << " assigned to RWY-A (emergency arrival)" <<  endl;
-            Runway[0].tryAssign(*emergency);
+            rwyA->tryAssign(*emergency);
             emergency->hasRunwayAssigned = true;
             return;
         }
@@ -58,7 +79,7 @@ void ATCScontroller::assignRunway()
         {
             // Emergency departure - assign to RWY-B
              cout << "Emergency " << emergency->FlightNumber  << " assigned to RWY-B (emergency departure)" <<  endl;
-            Runway[1].tryAssign(*emergency);
+            rwyB->tryAssign(*emergency);
             emergency->hasRunwayAssigned = true;
             return;
         }
@@ -66,7 +87,7 @@ void ATCScontroller::assignRunway()
         {
             // Use flexible runway for emergency
              cout << "Emergency " << emergency->FlightNumber << " assigned to RWY-C (flexible emergency)" <<  endl;
-            Runway[2].tryAssign(*emergency);
+            rwyC->tryAssign(*emergency);
             emergency->hasRunwayAssigned = true;
             return;
         }
@@ -87,7 +108,7 @@ void ATCScontroller::assignRunway()
             if (arrival->type == AirCraftType::Cargo)
             {
                  cout << "Cargo arrival " << arrival->FlightNumber << " assigned to RWY-C (cargo priority)" <<  endl;
-                Runway[2].tryAssign(*arrival);
+                rwyC->tryAssign(*arrival);
                 arrival->hasRunwayAssigned = true;
                 cargoAssigned = true;
                 break;
@@ -109,7 +130,7 @@ void ATCScontroller::assignRunway()
                 if (departure->type == AirCraftType::Cargo)
                 {
                      cout << "Cargo departure " << departure->FlightNumber << " assigned to RWY-C (cargo priority)" <<  endl;
-                    Runway[2].tryAssign(*departure);
+                    rwyC->tryAssign(*departure);
                     departure->hasRunwayAssigned = true;
                     cargoAssigned = true;
                     break;
@@ -141,7 +162,7 @@ void ATCScontroller::assignRunway()
             if (arrival->direction == Direction::North || arrival->direction == Direction::South)
             {
                  cout << "Arrival " << arrival->FlightNumber << " assigned to RWY-A (direction N/S)" <<  endl;
-                Runway[0].tryAssign(*arrival);
+                rwyA->tryAssign(*arrival);
                 arrival->hasRunwayAssigned = true;
             }
             else
@@ -163,7 +184,7 @@ void ATCScontroller::assignRunway()
             {
                  cout << "Departure " << departure->FlightNumber 
                           << " assigned to RWY-B (direction E/W)" <<  endl;
-                Runway[1].tryAssign(*departure);
+                rwyB->tryAssign(*departure);
                 departure->hasRunwayAssigned = true;
             }
             else
@@ -183,7 +204,7 @@ void ATCScontroller::assignRunway()
         if (arrival != nullptr)
         {
              cout << "Overflow arrival " << arrival->FlightNumber  << " assigned to RWY-C (overflow)" <<  endl;
-            Runway[2].tryAssign(*arrival);
+            rwyC->tryAssign(*arrival);
             arrival->hasRunwayAssigned = true;
         }
         else
@@ -193,7 +214,7 @@ void ATCScontroller::assignRunway()
             if (departure != nullptr)
             {
                  cout << "Overflow departure " << departure->FlightNumber << " assigned to RWY-C (overflow)" <<  endl;
-                Runway[2].tryAssign(*departure);
+                rwyC->tryAssign(*departure);
                 departure->hasRunwayAssigned = true;
             }
         }

@@ -3,6 +3,7 @@
 
 #include "FlightsScheduler.h"
 #include "Runway.h"
+#include "RunwayManager.h"
 
 /**
  * ATCScontroller class for monitoring and managing air traffic.
@@ -11,13 +12,17 @@
 class ATCScontroller 
 {
 private:
-    FlightsScheduler scheduler;  // Flight scheduler for managing flight queues
-    int schedulingInterval;      // How often to run scheduling (in seconds)
-    time_t lastScheduleTime;     // Last time we ran the scheduling algorithm
+    FlightsScheduler scheduler;      // Flight scheduler for managing flight queues
+    int schedulingInterval;          // How often to run scheduling (in seconds)
+    time_t lastScheduleTime;         // Last time we ran the scheduling algorithm
+    RunwayManager* runwayManager;    // Pointer to runway manager (now we're properly modular!)
     
 public:
-    // Constructor
+    // Constructor - now takes a runway manager pointer
     ATCScontroller();
+    
+    // Set the runway manager - call this after construction
+    void setRunwayManager(RunwayManager* rwManager);
     
     // Monitor flights in the airspace
     void monitorFlight();

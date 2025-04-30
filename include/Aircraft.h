@@ -48,7 +48,8 @@ public:
     // Check if aircraft is airborne
     bool isinAir();
     
-    // Check if aircraft is on the ground
+    int calculatePriorityScore() const;
+ // Check if aircraft is on the ground
     bool isOnGround();
     
     // Check if aircraft is ready for takeoff
@@ -59,6 +60,7 @@ public:
     
     // Assign runway to aircraft
     void AssignRunaway();
+    
 };
 
 #endif // AIRCONTROLX_AIRCRAFT_H

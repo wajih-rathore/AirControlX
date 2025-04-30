@@ -1,7 +1,6 @@
 #include "../include/ATCScontroller.h"
 #include <iostream>
 #include <ctime>
-#include <iomanip>
 using namespace std;
 
 ATCScontroller::ATCScontroller()
@@ -33,106 +32,178 @@ void ATCScontroller::monitorFlight()
 // Assign runways to aircraft based on priority and availability
 void ATCScontroller::assignRunway()
 {
-    // SAFETY FIRST! Check if runwayManager is properly initialized
-    if (runwayManager == nullptr)
+    // Make sure we have a valid runway manager
+    if (!runwayManager)
     {
-        std::cerr << "\n┌────────────────── ERROR ──────────────────┐" << std::endl;
-        std::cerr << "│ Runway manager not initialized!           │" << std::endl;
-        std::cerr << "│ Please call setRunwayManager() first      │" << std::endl;
-        std::cerr << "└──────────────────────────────────────────┘" << std::endl;
+        // Oopsie! Someone forgot to set the runway manager. Let's whine about it.
+        cout << "ATCScontroller: No runway manager available! Can't assign runways." << endl;
         return;
     }
     
-    // Get runway availability - with proper error checking
-    bool rwyA_available = false;
-    bool rwyB_available = false;
-    bool rwyC_available = false;
+    // Check runway availability first
+    RunwayClass* rwyA = runwayManager->getRunwayByIndex(0); // RWY-A
+    RunwayClass* rwyB = runwayManager->getRunwayByIndex(1); // RWY-B
+    RunwayClass* rwyC = runwayManager->getRunwayByIndex(2); // RWY-C
     
-    RunwayClass* rwyA = nullptr;
-    RunwayClass* rwyB = nullptr;
-    RunwayClass* rwyC = nullptr;
-    
-    try
+    // Safety check - if any runway pointer is null, something's very wrong
+    if (!rwyA || !rwyB || !rwyC)
     {
-        // Check availability of runways
-        rwyA_available = runwayManager->isRunwayAvailable("RWY-A");
-        rwyB_available = runwayManager->isRunwayAvailable("RWY-B");
-        rwyC_available = runwayManager->isRunwayAvailable("RWY-C");
+        cout << "ATCScontroller: Missing runway in manager! Can't assign runways." << endl;
+        return;
+    }
+    
+    bool rwyA_available = !rwyA->isOccupied;
+    bool rwyB_available = !rwyB->isOccupied;
+    bool rwyC_available = !rwyC->isOccupied;
+    
+    // If no runways are available, nothing to do
+    if (!rwyA_available && !rwyB_available && !rwyC_available)
+    {
+        return;
+    }
+    
+    // Step 1: First priority is ALWAYS emergency flights
+    Aircraft* emergency = scheduler.getNextEmergency();
+    if (emergency != nullptr)
+    {
+        // Try to assign emergency to appropriate runway based on direction
+        if ((emergency->direction == Direction::North || emergency->direction == Direction::South) && rwyA_available)
+        {
+            // Emergency arrival - assign to RWY-A
+            cout << "Emergency " << emergency->FlightNumber  << " assigned to RWY-A (emergency arrival)" <<  endl;
+            rwyA->tryAssign(*emergency);
+            emergency->hasRunwayAssigned = true;
+            return;
+        }
+        else if ((emergency->direction == Direction::East || emergency->direction == Direction::West) && rwyB_available)
+        {
+            // Emergency departure - assign to RWY-B
+             cout << "Emergency " << emergency->FlightNumber  << " assigned to RWY-B (emergency departure)" <<  endl;
+            rwyB->tryAssign(*emergency);
+            emergency->hasRunwayAssigned = true;
+            return;
+        }
+        else if (rwyC_available)
+        {
+            // Use flexible runway for emergency
+             cout << "Emergency " << emergency->FlightNumber << " assigned to RWY-C (flexible emergency)" <<  endl;
+            rwyC->tryAssign(*emergency);
+            emergency->hasRunwayAssigned = true;
+            return;
+        }
+        // If we get here, all runways are occupied but appropriate for emergency
+        // In a real system, we might consider clearing a runway for the emergency
+    }
+    
+    //Special handling for cargo flights they primarily use RWY-C
+    if (rwyC_available)
+    {
+        // Check both queues for cargo flights
+        bool cargoAssigned = false;
         
-        // Get runway pointers (only if they're available - saves unnecessary calls)
-        if (rwyA_available) rwyA = runwayManager->getRunway("RWY-A");
-        if (rwyB_available) rwyB = runwayManager->getRunway("RWY-B");
-        if (rwyC_available) rwyC = runwayManager->getRunway("RWY-C");
-    }
-    catch (const std::exception& e)
-    {
-        // Catching any exceptions from runway manager operations
-        std::cerr << "\n┌────────────────── ERROR ──────────────────┐" << std::endl;
-        std::cerr << "│ Error accessing runway information:       │" << std::endl;
-        std::cerr << "│ " << std::left << std::setw(40) << e.what() << "│" << std::endl;
-        std::cerr << "└──────────────────────────────────────────┘" << std::endl;
-        return;
+        // First check arrivals
+        Aircraft* arrival = nullptr;
+        while ((arrival = scheduler.getNextArrival()) != nullptr)
+        {
+            if (arrival->type == AirCraftType::Cargo)
+            {
+                 cout << "Cargo arrival " << arrival->FlightNumber << " assigned to RWY-C (cargo priority)" <<  endl;
+                rwyC->tryAssign(*arrival);
+                arrival->hasRunwayAssigned = true;
+                cargoAssigned = true;
+                break;
+            }
+            else
+            {
+                // Put it back in the queue if it's not cargo
+                scheduler.addArrival(arrival);
+                break;  // Only check the first one to maintain priority order
+            }
+        }
+        
+        // If no cargo arrivals, check departures
+        if (!cargoAssigned)
+        {
+            Aircraft* departure = nullptr;
+            while ((departure = scheduler.getNextDeparture()) != nullptr)
+            {
+                if (departure->type == AirCraftType::Cargo)
+                {
+                     cout << "Cargo departure " << departure->FlightNumber << " assigned to RWY-C (cargo priority)" <<  endl;
+                    rwyC->tryAssign(*departure);
+                    departure->hasRunwayAssigned = true;
+                    cargoAssigned = true;
+                    break;
+                }
+                else
+                {
+                    // Put it back in the queue if it's not cargo
+                    scheduler.addDeparture(departure);
+                    break;  // Only check the first one to maintain priority order
+                }
+            }
+        }
+        
+        // If we assigned a cargo flight, we're done for this scheduling cycle
+        if (cargoAssigned)
+        {
+            return;
+        }
     }
     
-    // North/South arrivals to RWY-A
-    if (rwyA_available && rwyA != nullptr)
+    // Step 3: Handle regular arrivals and departures based on direction
+    
+    // Process arrivals for RWY-A (North/South)
+    if (rwyA_available)
     {
         Aircraft* arrival = scheduler.getNextArrival();
-        if (arrival != nullptr && 
-            (arrival->direction == Direction::North || arrival->direction == Direction::South))
+        if (arrival != nullptr)
         {
-            std::string directionStr = (arrival->direction == Direction::North) ? "North" : "South";
-            std::cout << "\n┌────────────────── RUNWAY ASSIGNMENT ────────────────────┐" << std::endl;
-            std::cout << "│ Flight: " << std::left << std::setw(12) << arrival->FlightNumber;
-            std::cout << " Direction: " << std::left << std::setw(6) << directionStr;
-            std::cout << " Assigned: RWY-A │" << std::endl;
-            std::cout << "└────────────────────────────────────────────────────────┘" << std::endl;
-            
-            rwyA->tryAssign(*arrival);
-            arrival->hasRunwayAssigned = true;
+            if (arrival->direction == Direction::North || arrival->direction == Direction::South)
+            {
+                 cout << "Arrival " << arrival->FlightNumber << " assigned to RWY-A (direction N/S)" <<  endl;
+                rwyA->tryAssign(*arrival);
+                arrival->hasRunwayAssigned = true;
+            }
+            else
+            {
+                // This shouldn't happen based on your simulation setup,
+                // but just in case, put it back in the queue
+                scheduler.addArrival(arrival);
+            }
         }
     }
     
-    // East/West departures to RWY-B
-    if (rwyB_available && rwyB != nullptr)
+    // Process departures for RWY-B (East/West)
+    if (rwyB_available)
     {
         Aircraft* departure = scheduler.getNextDeparture();
-        if (departure != nullptr && 
-            (departure->direction == Direction::East || departure->direction == Direction::West))
+        if (departure != nullptr)
         {
-            std::string directionStr = (departure->direction == Direction::East) ? "East" : "West";
-            std::cout << "\n┌────────────────── RUNWAY ASSIGNMENT ──────────────────┐" << std::endl;
-            std::cout << "│ Flight: " << std::left << std::setw(12) << departure->FlightNumber;
-            std::cout << " Direction: " << std::left << std::setw(6) << directionStr;
-            std::cout << " Assigned: RWY-B │" << std::endl;
-            std::cout << "└──────────────────────────────────────────────────────┘" << std::endl;
-            
-            rwyB->tryAssign(*departure);
-            departure->hasRunwayAssigned = true;
+            if (departure->direction == Direction::East || departure->direction == Direction::West)
+            {
+                 cout << "Departure " << departure->FlightNumber 
+                          << " assigned to RWY-B (direction E/W)" <<  endl;
+                rwyB->tryAssign(*departure);
+                departure->hasRunwayAssigned = true;
+            }
+            else
+            {
+                // This shouldn't happen based on your simulation setup,
+                // but just in case, put it back in the queue
+                scheduler.addDeparture(departure);
+            }
         }
     }
     
-    // Cargo/emergency/overflow to RWY-C
-    if (rwyC_available && rwyC != nullptr)
+    // Step 4: Use RWY-C for overflow if it's still available (FR2.3)
+    if (rwyC_available)
     {
         // Check for any waiting arrivals first
         Aircraft* arrival = scheduler.getNextArrival();
         if (arrival != nullptr)
         {
-            std::string typeStr;
-            switch(arrival->type) {
-                case AirCraftType::Cargo: typeStr = "Cargo"; break;
-                case AirCraftType::Medical: typeStr = "Medical"; break;
-                case AirCraftType::Military: typeStr = "Military"; break;
-                default: typeStr = "Overflow"; break;
-            }
-            
-            std::cout << "\n┌────────────────── RUNWAY ASSIGNMENT ──────────────────┐" << std::endl;
-            std::cout << "│ Flight: " << std::left << std::setw(12) << arrival->FlightNumber;
-            std::cout << " Type: " << std::left << std::setw(8) << typeStr;
-            std::cout << " Assigned: RWY-C │" << std::endl;
-            std::cout << "└──────────────────────────────────────────────────────┘" << std::endl;
-            
+             cout << "Overflow arrival " << arrival->FlightNumber  << " assigned to RWY-C (overflow)" <<  endl;
             rwyC->tryAssign(*arrival);
             arrival->hasRunwayAssigned = true;
         }
@@ -142,20 +213,7 @@ void ATCScontroller::assignRunway()
             Aircraft* departure = scheduler.getNextDeparture();
             if (departure != nullptr)
             {
-                std::string typeStr;
-                switch(departure->type) {
-                    case AirCraftType::Cargo: typeStr = "Cargo"; break;
-                    case AirCraftType::Medical: typeStr = "Medical"; break;
-                    case AirCraftType::Military: typeStr = "Military"; break;
-                    default: typeStr = "Overflow"; break;
-                }
-                
-                std::cout << "\n┌────────────────── RUNWAY ASSIGNMENT ──────────────────┐" << std::endl;
-                std::cout << "│ Flight: " << std::left << std::setw(12) << departure->FlightNumber;
-                std::cout << " Type: " << std::left << std::setw(8) << typeStr;
-                std::cout << " Assigned: RWY-C │" << std::endl;
-                std::cout << "└──────────────────────────────────────────────────────┘" << std::endl;
-                
+                 cout << "Overflow departure " << departure->FlightNumber << " assigned to RWY-C (overflow)" <<  endl;
                 rwyC->tryAssign(*departure);
                 departure->hasRunwayAssigned = true;
             }

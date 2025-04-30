@@ -14,6 +14,12 @@ aircontrolx
 
 # VS Code settings
 .vscode/
+.vscode/c_cpp_properties.json
+.vscode/launch.json
+.vscode/tasks.json
+.vscode/settings.json
 
 # CLion settings
 .idea/
+
+.github/

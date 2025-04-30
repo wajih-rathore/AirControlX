@@ -3,7 +3,8 @@
 #include <string>
 #include <ctime>
 #include <cstdlib>
-#include<pthread.h>
+#include <pthread.h>
+#include <unistd.h> // For sleep function
 
 // Include all header files
 #include "Common.h"
@@ -33,19 +34,207 @@ Airline PakAirforce; // 2 aircraft, 1 max flight
 Airline BlueDart;  // 2 aircraft, 2 max flights
 Airline AghaKhanAir; // 3 aircraft, 1 max flight
 
+// ATC controller (global so it can be accessed from flight threads)
+ATCScontroller atcController;
+
 //Threads, Each Thread is an Aircraft
 pthread_t plane_thread[20] = {0};
 int threadIndex = 0;
 
+// Mutex to protect console output to prevent garbled text
+pthread_mutex_t console_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 // Thread that will simulate a plane flight
 void *Flight(void *arg)
 {
+    // Cast the argument back to an Aircraft pointer
     Aircraft* plane = static_cast<Aircraft*>(arg);
-    cout<<"I'm a plane hehe";
-    cout<<plane->FlightNumber<<endl;
+    
+    // Mark the plane as active
+    plane->isActive = true;
+    
+    // Lock the console mutex to prevent garbled output
+    pthread_mutex_lock(&console_mutex);
+    cout << "Flight " << plane->FlightNumber << " is now active" << endl;
+    pthread_mutex_unlock(&console_mutex);
 
-    // Exit the thread cleanly
-    pthread_exit(nullptr);  // Clean exit
+    // Set flight direction based on type (for simulation purposes)
+    // North/South for arrivals, East/West for departures
+    // We'll use a simple rule: even index = arrival, odd index = departure
+    if (plane->aircraftIndex % 2 == 0) 
+    {
+        // Arrival flow - either North or South
+        plane->direction = (plane->aircraftIndex % 4 == 0) ? Direction::North : Direction::South;
+        
+        // For arrivals, start at Holding state
+        plane->state = FlightState::Holding;
+        
+        // Add to arrival queue
+        atcController.scheduleArrival(plane);
+        
+        pthread_mutex_lock(&console_mutex);
+        cout << "Flight " << plane->FlightNumber << " entering from "  << (plane->direction == Direction::North ? "North" : "South") << " has entered the arrival queue" << endl;
+        pthread_mutex_unlock(&console_mutex);
+        
+        // Simulate the arrival sequence
+        
+        // Holding phase - waiting for runway assignment
+        int waitTime = 0;
+        while (!plane->hasRunwayAssigned && waitTime < 30) 
+        {
+            sleep(1);  // Check every second if runway assigned
+            waitTime++;
+            
+            // Every 5 seconds, print status update with estimated wait time
+            if (waitTime % 5 == 0) 
+            {
+                int estimatedWait = atcController.getScheduler()->estimateWaitTime(plane);
+                
+                pthread_mutex_lock(&console_mutex);
+                cout << "Flight " << plane->FlightNumber << " holding, estimated wait: " << estimatedWait << " minutes" << endl;
+                pthread_mutex_unlock(&console_mutex);
+            }
+        }
+        
+        // If runway assigned, proceed with landing sequence
+        if (plane->hasRunwayAssigned) 
+        {
+            pthread_mutex_lock(&console_mutex);
+            cout << "Flight " << plane->FlightNumber << " has been assigned a runway!" << endl;
+            pthread_mutex_unlock(&console_mutex);
+            
+            // Approach phase
+            plane->state = FlightState::Approach;
+            plane->UpdateSpeed();
+            sleep(3);
+            
+            // Landing phase
+            plane->state = FlightState::Landing;
+            plane->UpdateSpeed();
+            sleep(2);
+            
+            // Taxi phase
+            plane->state = FlightState::Taxi;
+            plane->UpdateSpeed();
+            sleep(2);
+            
+            // At gate
+            plane->state = FlightState::AtGate;
+            plane->UpdateSpeed();
+            
+            pthread_mutex_lock(&console_mutex);
+            cout << "Flight " << plane->FlightNumber << " has arrived at gate" << endl;
+            pthread_mutex_unlock(&console_mutex);
+            
+            // Release the runway now that we're at the gate
+            for (int i = 0; i < 3; i++) 
+            {
+                if (Runway[i].isOccupied) 
+                {
+                    Runway[i].release();
+                    break;
+                }
+            }
+        } 
+        else 
+        {
+            pthread_mutex_lock(&console_mutex);
+            cout << "Flight " << plane->FlightNumber << " timed out waiting for runway!" << endl;
+            pthread_mutex_unlock(&console_mutex);
+        }
+    } 
+    else 
+    {
+        // Departure flow - either East or West
+        plane->direction = (plane->aircraftIndex % 4 == 1) ? Direction::East : Direction::West;
+        
+        // For departures, start at the gate
+        plane->state = FlightState::AtGate;
+        
+        // Add to departure queue
+        atcController.scheduleDeparture(plane);
+        
+        pthread_mutex_lock(&console_mutex);
+        cout << "Flight " << plane->FlightNumber << " departing to " << (plane->direction == Direction::East ? "East" : "West") << " has entered the departure queue" << endl;
+        pthread_mutex_unlock(&console_mutex);
+        
+        // Simulate the departure sequence
+        
+        // At gate phase - waiting for runway assignment
+        int waitTime = 0;
+        while (!plane->hasRunwayAssigned && waitTime < 30) 
+        {
+            sleep(1);  // Check every second if runway assigned
+            waitTime++;
+            
+            // Every 5 seconds, print status update with estimated wait time
+            if (waitTime % 5 == 0) 
+            {
+                int estimatedWait = atcController.getScheduler()->estimateWaitTime(plane);
+                
+                pthread_mutex_lock(&console_mutex);
+                cout << "Flight " << plane->FlightNumber << " at gate, estimated wait: " << estimatedWait << " minutes" << endl;
+                pthread_mutex_unlock(&console_mutex);
+            }
+        }
+        
+        // If runway assigned, proceed with takeoff sequence
+        if (plane->hasRunwayAssigned) 
+        {
+            pthread_mutex_lock(&console_mutex);
+            cout << "Flight " << plane->FlightNumber << " has been assigned a runway!" << endl;
+            pthread_mutex_unlock(&console_mutex);
+            
+            // Taxi phase
+            plane->state = FlightState::Taxi;
+            plane->UpdateSpeed();
+            sleep(2);
+            
+            // Takeoff phase
+            plane->state = FlightState::TakeoffRoll;
+            plane->UpdateSpeed();
+            sleep(2);
+            
+            // Climb phase
+            plane->state = FlightState::Climb;
+            plane->UpdateSpeed();
+            sleep(2);
+            
+            // Cruise phase
+            plane->state = FlightState::Cruise;
+            plane->UpdateSpeed();
+            
+            pthread_mutex_lock(&console_mutex);
+            cout << "Flight " << plane->FlightNumber << " has reached cruising altitude" << endl;
+            pthread_mutex_unlock(&console_mutex);
+            
+            // Release the runway now that we're airborne
+            for (int i = 0; i < 3; i++) 
+            {
+                if (Runway[i].isOccupied) 
+                {
+                    Runway[i].release();
+                    break;
+                }
+            }
+        } 
+        else 
+        {
+            pthread_mutex_lock(&console_mutex);
+            cout << "Flight " << plane->FlightNumber << " timed out waiting for runway!" << endl;
+            pthread_mutex_unlock(&console_mutex);
+        }
+    }
+    
+    // Flight is now complete or timed out
+    plane->isActive = false;
+    
+    pthread_mutex_lock(&console_mutex);
+    cout << "Flight " << plane->FlightNumber << " has completed its journey" << endl;
+    pthread_mutex_unlock(&console_mutex);
+    
+    // Exit thread
+    pthread_exit(nullptr);
 }
 
 // Helper functions for simulation
@@ -182,87 +371,91 @@ bool launchThreadsForAirline(Airline* airline)
 
 int main() 
 {
-    
-    /* Starting Part to be Uncommented Later on
-
     // Seed the random number generator
     srand(time(NULL));
     
+    cout << "AirControlX - Automated Air Traffic Control System" << endl;
+    cout << "Module 2: Flight Scheduling Implementation" << endl << endl;
+    
     // Initialize airlines and runways
+    cout << "Initializing airlines and runways..." << endl;
     initializeAirlines();
     initializeRunways();
     
-    cout << "AirControlX - Automated Air Traffic Control System" << endl;
-    cout << "Module 1: System Rules & Restrictions" << endl;
-    
-    // Display the dummy menu on a clean terminal
-    displayDummyMenu();
-    
-    // Wait for user input before exiting
-    int choice;
-    cin >> choice;
-    
-    cout << "You selected option " << choice << endl;
-    cout << "This is a dummy implementation. Functionality coming soon!" << endl;
-    */
-    
-    initializeAirlines();
-
-    // Call the Function to create Threads of Aircrafts for all airlines
-    launchThreadsForAirline(&PIA);
-    launchThreadsForAirline(&AirBlue);
-    launchThreadsForAirline(&FedEx);
-    launchThreadsForAirline(&PakAirforce);
-    launchThreadsForAirline(&BlueDart);
-    launchThreadsForAirline(&AghaKhanAir);
-
-    // Wait for all threads to finish
-    for (int i = 0; i < threadIndex; ++i) 
-        pthread_join(plane_thread[i], nullptr);
-
-
-    return 0;
-}
-
-
-
-
-/*
-
-#include <SFML/Graphics.hpp>
-
-int main()
-{
-    // Create a window with the title "SFML Test"
-    sf::RenderWindow window(sf::VideoMode(800, 600), "SFML Test");
-
-    // Create a green circle shape
-    sf::CircleShape circle(100.f);
-    circle.setFillColor(sf::Color::Green);
-    circle.setPosition(350.f, 250.f); // Center the circle in the window
-
-    // Main loop
-    while (window.isOpen())
-    {
-        // Handle events
-        sf::Event event;
-        while (window.pollEvent(event))
-        {
-            if (event.type == sf::Event::Closed)
-                window.close();
+    // Create a separate thread for the ATC controller to monitor flights
+    pthread_t atcThread;
+    pthread_create(&atcThread, NULL, [](void *) -> void* {
+        cout << "ATC controller active - monitoring flights" << endl;
+        
+        // Run the controller for the duration of the simulation
+        for (int i = 0; i < 300; i++) { // 5 minutes (300 seconds)
+            atcController.monitorFlight();
+            sleep(1);  // Check every second
+            
+            // Every 20 seconds, print runway status
+            if (i % 20 == 0) {
+                pthread_mutex_lock(&console_mutex);
+                cout << "\n--- RUNWAY STATUS UPDATE ---" << endl;
+                for (int j = 0; j < 3; j++) {
+                    cout << Runway[j].id << ": " 
+                         << (Runway[j].isOccupied ? "OCCUPIED" : "AVAILABLE") << endl;
+                }
+                cout << "---------------------------\n" << endl;
+                pthread_mutex_unlock(&console_mutex);
+            }
         }
-
-        // Clear the window
-        window.clear(sf::Color::Black);
-
-        // Draw the circle
-        window.draw(circle);
-
-        // Display the window
-        window.display();
+        
+        return nullptr;
+    }, nullptr);
+    
+    // Create random emergency for testing (1 in 3 chance)
+    if (rand() % 3 == 0) {
+        int randomAirlineIndex = rand() % 6;
+        Airline* airlines[] = {&PIA, &AirBlue, &FedEx, &PakAirforce, &BlueDart, &AghaKhanAir};
+        Airline* randomAirline = airlines[randomAirlineIndex];
+        
+        if (!randomAirline->aircrafts.empty()) {
+            int randomAircraftIndex = rand() % randomAirline->aircrafts.size();
+            randomAirline->aircrafts[randomAircraftIndex].EmergencyNo = 1 + rand() % 3;
+            
+            cout << "EMERGENCY ALERT: " << randomAirline->aircrafts[randomAircraftIndex].FlightNumber 
+                 << " has declared emergency level " 
+                 << randomAirline->aircrafts[randomAircraftIndex].EmergencyNo << endl;
+        }
     }
-
+    
+    cout << "Launching aircraft threads..." << endl;
+    sleep(1);  // Short pause for readability
+    
+    // Launch aircraft threads
+    launchThreadsForAirline(&PIA);
+    sleep(1);  // Stagger launches to make output more readable
+    
+    launchThreadsForAirline(&AirBlue);
+    sleep(1);
+    
+    launchThreadsForAirline(&FedEx);
+    sleep(1);
+    
+    launchThreadsForAirline(&PakAirforce);
+    sleep(1);
+    
+    launchThreadsForAirline(&BlueDart);
+    sleep(1);
+    
+    launchThreadsForAirline(&AghaKhanAir);
+    
+    cout << "All aircraft launched, simulation running..." << endl;
+    
+    // Wait for all aircraft threads to finish
+    for (int i = 0; i < threadIndex; ++i) {
+        pthread_join(plane_thread[i], nullptr);
+    }
+    
+    // Join the ATC controller thread
+    pthread_join(atcThread, nullptr);
+    
+    cout << "\nSimulation complete!" << endl;
+    
     return 0;
 }
-
-*/

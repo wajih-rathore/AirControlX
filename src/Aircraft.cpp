@@ -3,11 +3,15 @@
 #include <algorithm>
 using namespace std;
 
-// Constructor initializes default aircraft values
-Aircraft::Aircraft() {
-    FlightNumber = "";
-    Airline = "";
-    type = AirCraftType::Commercial;
+Aircraft::Aircraft(int index, const std::string& airlineName, AirCraftType aircraftType) {
+    aircraftIndex = index;
+    Airline = airlineName;
+    type = aircraftType;
+
+    // Construct unique flight number like "PIA"
+    FlightNumber = airlineName + "-" + std::to_string(index );
+
+    // Default initializations
     direction = Direction::North;
     state = FlightState::Holding;
     speed = 0;
@@ -15,8 +19,10 @@ Aircraft::Aircraft() {
     HasViolation = false;
     isFaulty = false;
     isActive = false;
-    position = make_pair(-1 , -1);
+    x_position = -1;
+    y_position = -1;
 }
+
 
 // Destructor for aircraft class
 Aircraft::~Aircraft() {

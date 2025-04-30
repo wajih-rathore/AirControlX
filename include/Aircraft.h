@@ -19,14 +19,15 @@ public:
     Timer timer;               // Timer for tracking flight events
     int speed;                 // Current speed in km/h
     int EmergencyNo;           // Emergency level (0 for no emergency)
-    pair<int, int> position;   //The Current (x, y) position for the plane 
+    int x_position, y_position;   // The Current (x, y) position for the plane 
     bool HasViolation;         // Flag for speed/rule violations
     bool isFaulty;             // Flag for faulty aircraft
     bool isActive;             // Flag for active flight
+    int aircraftIndex ;        // Tells which index the aircraft belongs to in AirLine
 
     // Constructor
-    Aircraft();
-    
+    Aircraft(int index, const std::string& airlineName, AirCraftType aircraftType);
+
     // Destructor
     ~Aircraft();
     

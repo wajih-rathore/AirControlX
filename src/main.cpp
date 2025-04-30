@@ -3,6 +3,7 @@
 #include <string>
 #include <ctime>
 #include <cstdlib>
+#include<pthread.h>
 
 // Include all header files
 #include "Common.h"
@@ -21,8 +22,6 @@
 
 using namespace std;
 
-// 20 AirCrafts
-Aircraft Planes[20];
 // 3 Runways
 RunwayClass Runway[3];
 
@@ -32,10 +31,22 @@ Airline AirBlue;   // 4 aircraft, 4 max flights
 Airline FedEx;     // 3 aircraft, 2 max flights
 Airline PakAirforce; // 2 aircraft, 1 max flight
 Airline BlueDart;  // 2 aircraft, 2 max flights
-Airline AghaKhanAir; // 2 aircraft, 1 max flight
+Airline AghaKhanAir; // 3 aircraft, 1 max flight
+
+//Threads, Each Thread is an Aircraft
+pthread_t plane_thread[20] = {0};
+int threadIndex = 0;
 
 // Thread that will simulate a plane flight
-void *Flight(void *arg);
+void *Flight(void *arg)
+{
+    Aircraft* plane = static_cast<Aircraft*>(arg);
+    cout<<"I'm a plane hehe";
+    cout<<plane->FlightNumber<<endl;
+
+    // Exit the thread cleanly
+    pthread_exit(nullptr);  // Clean exit
+}
 
 // Helper functions for simulation
 void initializeAirlines() 
@@ -44,49 +55,49 @@ void initializeAirlines()
     PIA.name = "PIA";
     PIA.type = AirCraftType::Commercial;
     PIA.maxFlights = 4;
-    PIA.aircrafts.resize(6);
+    PIA.aircrafts.reserve(6); 
     
     // Initialize AirBlue (Commercial)
     AirBlue.name = "AirBlue";
     AirBlue.type = AirCraftType::Commercial;
     AirBlue.maxFlights = 4;
-    AirBlue.aircrafts.resize(4);
+    AirBlue.aircrafts.reserve(4);
     
     // Initialize FedEx (Cargo)
     FedEx.name = "FedEx";
     FedEx.type = AirCraftType::Cargo;
     FedEx.maxFlights = 2;
-    FedEx.aircrafts.resize(3);
+    FedEx.aircrafts.reserve(3);
     
     // Initialize PakAirforce (Military)
     PakAirforce.name = "Pakistan Airforce";
     PakAirforce.type = AirCraftType::Military;
     PakAirforce.maxFlights = 1;
-    PakAirforce.aircrafts.resize(2);
+    PakAirforce.aircrafts.reserve(2);
     
     // Initialize BlueDart (Cargo)
     BlueDart.name = "Blue Dart";
     BlueDart.type = AirCraftType::Cargo;
     BlueDart.maxFlights = 2;
-    BlueDart.aircrafts.resize(2);
+    BlueDart.aircrafts.reserve(2);
     
     // Initialize AghaKhanAir (Medical)
     AghaKhanAir.name = "AghaKhan Air";
     AghaKhanAir.type = AirCraftType::Medical;
     AghaKhanAir.maxFlights = 1;
-    AghaKhanAir.aircrafts.resize(2);
+    AghaKhanAir.aircrafts.reserve(3);
     
-    // Initialize each aircraft in each airline
+    // Initialize each aircraft in each airline while passing suitable
+    // arguments to the constructor
     for (auto& airline : {&PIA, &AirBlue, &FedEx, &PakAirforce, &BlueDart, &AghaKhanAir}) 
+{
+    for (int i = 0; i < static_cast<int>(airline->aircrafts.capacity()); ++i) 
     {
-        for (size_t i = 0; i < airline->aircrafts.size(); i++) 
-        {
-            airline->aircrafts[i].Airline = airline->name;
-            airline->aircrafts[i].type = airline->type;
-            airline->aircrafts[i].FlightNumber = airline->name + "-" + to_string(i+1);
-            airline->aircrafts[i].isActive = false;
-        }
+        // Emplace_back will create an object while passing the arguments to Constructor
+        airline->aircrafts.emplace_back(i, airline->name, airline->type); 
     }
+}
+
 }
 
 void initializeRunways() 
@@ -147,9 +158,33 @@ void displayDummyMenu() {
     cout << "Enter your choice: ";
 }
 
-/*
+bool launchThreadsForAirline(Airline* airline)
+{
+    // Create a thread for each aircraft in the airline
+    for (size_t i = 0; i < airline->aircrafts.size(); ++i) 
+    {
+        // Launch a thread for each aircraft
+        int result = pthread_create(&plane_thread[threadIndex], NULL, Flight, (void*)&airline->aircrafts[i]);
+        
+        if (result != 0) {
+            // Return false if thread creation fails
+            cerr << "Error creating thread for Aircraft " << airline->aircrafts[i].FlightNumber << endl;
+            return false;
+        }
+
+        // Increment thread index to use the next available thread slot
+        ++threadIndex;
+    }
+
+    return true; // Successfully created threads for all aircrafts
+}
+
+
 int main() 
 {
+    
+    /* Starting Part to be Uncommented Later on
+
     // Seed the random number generator
     srand(time(NULL));
     
@@ -169,24 +204,30 @@ int main()
     
     cout << "You selected option " << choice << endl;
     cout << "This is a dummy implementation. Functionality coming soon!" << endl;
+    */
     
+    initializeAirlines();
+
+    // Call the Function to create Threads of Aircrafts for all airlines
+    launchThreadsForAirline(&PIA);
+    launchThreadsForAirline(&AirBlue);
+    launchThreadsForAirline(&FedEx);
+    launchThreadsForAirline(&PakAirforce);
+    launchThreadsForAirline(&BlueDart);
+    launchThreadsForAirline(&AghaKhanAir);
+
+    // Wait for all threads to finish
+    for (int i = 0; i < threadIndex; ++i) 
+        pthread_join(plane_thread[i], nullptr);
+
+
     return 0;
 }
 
-*/
 
 
 
-/* 
-
-dear sagar :) 
-sfml test karne k liyye comment out the above code 
-and uncomment the below code, mere end pe toh chal raha hai
-
-*/
-
-
-
+/*
 
 #include <SFML/Graphics.hpp>
 
@@ -224,4 +265,4 @@ int main()
     return 0;
 }
 
-///Hello Wajih
+*/

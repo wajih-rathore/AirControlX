@@ -1,6 +1,7 @@
 #include "../include/Aircraft.h"
 #include <cstdlib>
 #include <algorithm>
+#include <ctime>
 using namespace std;
 
 Aircraft::Aircraft(int index, const std::string& airlineName, AirCraftType aircraftType) {
@@ -21,8 +22,9 @@ Aircraft::Aircraft(int index, const std::string& airlineName, AirCraftType aircr
     isActive = false;
     x_position = -1;
     y_position = -1;
+    queueEntryTime = 0;
+    hasRunwayAssigned = false;
 }
-
 
 // Destructor for aircraft class
 Aircraft::~Aircraft() {
@@ -145,4 +147,51 @@ void Aircraft::RequestRunawayAssignment() {
 // Assign a runway to this aircraft
 void Aircraft::AssignRunaway() {
     // Implementation to be added in Module 2
+}
+
+// Calculate priority score for flight scheduling
+// Higher score = higher priority (easier to understand this way)
+int Aircraft::calculatePriorityScore() const {
+    int score = 0;
+    
+    // ================ PRIORITY FACTORS ================
+    // As per FR3.3 and FR4.1, priority is based on:
+    // 1. Emergency status (highest priority)
+    // 2. Aircraft type 
+    // 3. Wait time (for FCFS within priority)
+    
+    // 1. Emergency priority - The big cheese of priorities!
+    // Emergency flights get the VIP express lane treatment
+    if (EmergencyNo > 0) {
+        score += 10000 * EmergencyNo;  // Emergency level multiplier
+        // With this big number, emergencies will always be first
+        // Unless you have like 100 aircraft waiting for 100000 seconds... which would be bad.
+    }
+    
+    // 2. Aircraft type priority - Not all planes are created equal
+    switch (type) {
+        case AirCraftType::Medical:
+            score += 1000;  // Medical flights (second highest priority)
+            break;
+        case AirCraftType::Military:
+            score += 800;   // Military operations
+            break;
+        case AirCraftType::Cargo:
+            score += 600;   // Cargo flights
+            break;
+        case AirCraftType::Commercial:
+        default:
+            score += 400;   // Regular commercial flights
+            break;
+    }
+    
+    // 3. Wait time factor - The longer you wait, the angrier you get
+    // This implements FCFS within same priority class (FR5.1)
+    if (queueEntryTime > 0) {
+        time_t currentTime = time(NULL);
+        int waitTime = static_cast<int>(currentTime - queueEntryTime);
+        score += waitTime;  // 1 point per second of waiting
+    }
+    
+    return score;
 }

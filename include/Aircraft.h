@@ -23,7 +23,9 @@ public:
     bool HasViolation;         // Flag for speed/rule violations
     bool isFaulty;             // Flag for faulty aircraft
     bool isActive;             // Flag for active flight
-    int aircraftIndex ;        // Tells which index the aircraft belongs to in AirLine
+    int aircraftIndex;         // Tells which index the aircraft belongs to in AirLine
+    time_t queueEntryTime;     // When the aircraft entered the queue (for FCFS)
+    bool hasRunwayAssigned;    // Whether a runway has been assigned
 
     // Constructor
     Aircraft(int index, const std::string& airlineName, AirCraftType aircraftType);

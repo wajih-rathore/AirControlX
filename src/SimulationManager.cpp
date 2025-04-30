@@ -1,5 +1,6 @@
 #include "../include/SimulationManager.h"
 #include <cstdlib>
+#include <ctime>
 
 // Struct that holds thread arguments for flight simulation
 struct SimulationManager::ThreadArgs 
@@ -112,6 +113,8 @@ void* SimulationManager::flightThreadFunction(void* arg)
             // Taxi phase
             plane->state = FlightState::Taxi;
             plane->UpdateSpeed();
+            manager->logMessage("Flight " + plane->FlightNumber + 
+                               " is now taxiing at " + std::to_string(plane->speed) + " km/h");
             sleep(2);
             
             // At gate
@@ -180,16 +183,22 @@ void* SimulationManager::flightThreadFunction(void* arg)
             // Taxi phase
             plane->state = FlightState::Taxi;
             plane->UpdateSpeed();
+            manager->logMessage("Flight " + plane->FlightNumber + 
+                               " is now taxiing at " + std::to_string(plane->speed) + " km/h");
             sleep(2);
             
             // Takeoff phase
             plane->state = FlightState::TakeoffRoll;
             plane->UpdateSpeed();
+            manager->logMessage("Flight " + plane->FlightNumber + 
+                               " is taking off at " + std::to_string(plane->speed) + " km/h");
             sleep(2);
             
             // Climb phase
             plane->state = FlightState::Climb;
             plane->UpdateSpeed();
+            manager->logMessage("Flight " + plane->FlightNumber + 
+                               " is climbing at " + std::to_string(plane->speed) + " km/h");
             sleep(2);
             
             // Cruise phase
@@ -197,7 +206,7 @@ void* SimulationManager::flightThreadFunction(void* arg)
             plane->UpdateSpeed();
             
             manager->logMessage("Flight " + plane->FlightNumber + 
-                               " has reached cruising altitude");
+                               " has reached cruising altitude at " + std::to_string(plane->speed) + " km/h");
             
             // Release the runway now that we're airborne
             for (int i = 0; i < runwayManager->getRunwayCount(); i++) 
@@ -361,11 +370,39 @@ void SimulationManager::waitForCompletion()
 }
 
 /**
- * Thread-safe console logging
+ * Thread-safe console logging with improved formatting
  */
 void SimulationManager::logMessage(const std::string& message) 
 {
     pthread_mutex_lock(&consoleMutex);
-    std::cout << message << std::endl;
+    
+    // Get the current time for timestamping
+    time_t now = time(nullptr);
+    struct tm *timeinfo = localtime(&now);
+    char timestamp[10];
+    strftime(timestamp, sizeof(timestamp), "[%H:%M:%S]", timeinfo);
+    
+    // Detect message type and format accordingly
+    if (message.find("Flight") != std::string::npos && message.find("runway") != std::string::npos) {
+        // Runway assignment messages
+        std::cout << "\033[1;33m" << timestamp << " [RUNWAY] " << message << "\033[0m" << std::endl;
+    }
+    else if (message.find("Flight") != std::string::npos && message.find("cruising") != std::string::npos) {
+        // Flight status updates
+        std::cout << "\033[1;32m" << timestamp << " [STATUS] " << message << "\033[0m" << std::endl;
+    }
+    else if (message.find("EMERGENCY") != std::string::npos) {
+        // Emergency messages
+        std::cout << "\033[1;31m" << timestamp << " [EMERGENCY] " << message << "\033[0m" << std::endl;
+    }
+    else if (message.find("VIOLATION") != std::string::npos) {
+        // Violation messages
+        std::cout << "\033[1;35m" << timestamp << " [VIOLATION] " << message << "\033[0m" << std::endl;
+    }
+    else {
+        // Regular messages
+        std::cout << "\033[1;36m" << timestamp << " [INFO] " << message << "\033[0m" << std::endl;
+    }
+    
     pthread_mutex_unlock(&consoleMutex);
 }

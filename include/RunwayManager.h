@@ -31,6 +31,12 @@ public:
     
     // Get formatted runway status report
     std::string getStatusReport() const;
+    
+    // Check if a specific runway is available
+    bool isRunwayAvailable(const std::string& runwayId);
+    
+    // Get a runway by its ID
+    RunwayClass* getRunway(const std::string& runwayId);
 };
 
 #endif // AIRCONTROLX_RUNWAYMANAGER_H

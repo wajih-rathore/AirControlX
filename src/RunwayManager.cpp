@@ -80,3 +80,49 @@ std::string RunwayManager::getStatusReport() const
     report << "---------------------------";
     return report.str();
 }
+
+/**
+ * Check if a specific runway is available
+ * @param runwayId The ID of the runway to check (e.g., "RWY-A")
+ * @return True if the runway exists and is not occupied, false otherwise
+ */
+bool RunwayManager::isRunwayAvailable(const std::string& runwayId) 
+{
+    // Search for the runway with the given ID
+    for (size_t i = 0; i < runways.size(); i++) 
+    {
+        if (runways[i].id == runwayId) 
+        {
+            // Found the runway, return its availability status (opposite of occupied)
+            return !runways[i].isOccupied;
+        }
+    }
+    
+    // If we got here, the runway ID wasn't found - that's an error!
+    // We could throw an exception here, but let's just return false for now
+    // since a non-existent runway isn't available anyway
+    return false;
+}
+
+/**
+ * Get a runway by its ID
+ * @param runwayId The ID of the runway to get (e.g., "RWY-A")
+ * @return Pointer to the runway, or nullptr if not found
+ */
+RunwayClass* RunwayManager::getRunway(const std::string& runwayId) 
+{
+    // Search for the runway with the given ID
+    for (size_t i = 0; i < runways.size(); i++) 
+    {
+        if (runways[i].id == runwayId) 
+        {
+            // Found it! Return a pointer to this runway
+            // Don't worry about the & - it's just getting a pointer to an element in the vector
+            return &runways[i];
+        }
+    }
+    
+    // Runway not found - return nullptr
+    // This will trigger the safety checks in assignRunway()
+    return nullptr;
+}

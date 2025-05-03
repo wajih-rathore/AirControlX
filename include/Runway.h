@@ -19,6 +19,9 @@ public:
     // Constructor
     RunwayClass();
     
+    //Constructor with Arguments
+    RunwayClass(std::string run, RunwayType Inputtype, bool occupied);
+
     // Try to assign runway to aircraft
     bool tryAssign(Aircraft &plane);
     

@@ -60,6 +60,9 @@ public:
     
     // Assign runway to aircraft
     void AssignRunaway();
+
+    //Update the position of the aircraft
+    void updatePosition();
     
 };
 

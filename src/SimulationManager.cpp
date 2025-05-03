@@ -66,6 +66,27 @@ void* SimulationManager::flightThreadFunction(void* arg)
         // Arrival flow - either North or South
         plane->direction = (plane->aircraftIndex % 4 == 0) ? Direction::North : Direction::South;
         
+        //NOTE : WE CAN DO THE POSITION WALA PART OR NOT, TO BE DECIDEDDDDDDDD ????
+        /* Commenting this for now, same for the departures
+        // Randomly generate x and y positions based on direction
+        Was also thinking of adding z(height) and making directions to 360
+        //Getting a bit complicated, but we can add this later
+        //Have to align it with the sprites too
+        // Have to do some math with the speed as well as distance
+        //Monday ko together we do this after classes
+        //Update Position Function has to be added somewhere
+        if(plane->direction == Direction::North) 
+        {
+            plane->x_position = rand() % 1000000; // Random x position for North
+            plane->y_position = 0; // Fixed y position for North
+        }
+        else if(plane->direction == Direction::South) 
+        {
+            plane->x_position = rand() % 100; // Random x position for South
+            plane->y_position = 100; // Fixed y position for South
+        }
+        */
+        
         // For arrivals, start at Holding state
         plane->state = FlightState::Holding;
         

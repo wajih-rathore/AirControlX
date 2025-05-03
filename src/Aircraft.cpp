@@ -141,12 +141,13 @@ bool Aircraft::isReadyForTakeOff() {
 
 // Request runway assignment for this aircraft
 void Aircraft::RequestRunawayAssignment() {
-    // Implementation to be added in Module 2
+
+
+
 }
 
 // Assign a runway to this aircraft
 void Aircraft::AssignRunaway() {
-    // Implementation to be added in Module 2
 }
 
 // Calculate priority score for flight scheduling
@@ -194,4 +195,19 @@ int Aircraft::calculatePriorityScore() const {
     }
     
     return score;
+}
+
+//Have to determine the appropiate spot to call this function
+void Aircraft::updatePosition() {
+    // Update the position of the aircraft based on its speed and direction
+    // This is a placeholder implementation and should be replaced with actual logic
+    if (direction == Direction::North) {
+        y_position += speed / 60;  // Move North
+    } else if (direction == Direction::South) {
+        y_position -= speed / 60;  // Move South
+    } else if (direction == Direction::East) {
+        x_position += speed / 60;  // Move East
+    } else if (direction == Direction::West) {
+        x_position -= speed / 60;  // Move West
+    }
 }

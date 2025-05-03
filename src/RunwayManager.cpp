@@ -27,23 +27,15 @@ void RunwayManager::initialize()
     
     // Create the three standard runways
     
-    // RWY-A: North-South alignment (arrivals)
-    RunwayClass rwyA;
-    rwyA.id = "RWY-A";
-    rwyA.type = RunwayType::Arrival;
-    runways.push_back(rwyA);
-    
+    // RWY-A: North-South alignment (arrivals)    
+    runways.emplace_back("RWY-A", RunwayType::Arrival, false);
+
     // RWY-B: East-West alignment (departures)
-    RunwayClass rwyB;
-    rwyB.id = "RWY-B";
-    rwyB.type = RunwayType::Departure;
-    runways.push_back(rwyB);
-    
+    runways.emplace_back("RWY-B", RunwayType::Departure, false);
+
     // RWY-C: Flexible for cargo/emergency/overflow
-    RunwayClass rwyC;
-    rwyC.id = "RWY-C";
-    rwyC.type = RunwayType::Flexible;
-    runways.push_back(rwyC);
+    runways.emplace_back("RWY-C", RunwayType::Flexible, false);
+
 }
 
 /**

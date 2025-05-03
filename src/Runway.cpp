@@ -9,6 +9,13 @@ RunwayClass::RunwayClass() {
     turn = 0;
 }
 
+RunwayClass::RunwayClass(string run, RunwayType Inputtype, bool occupied ) {
+    id = run;
+    type = Inputtype;
+    isOccupied = occupied;
+    turn = 0;
+}
+
 // Try to assign runway to an aircraft based on compatibility
 bool RunwayClass::tryAssign(Aircraft &plane) {
     if (isOccupied) return false;

@@ -1,0 +1,243 @@
+@startuml AirControlX System
+
+' Style settings
+skinparam classAttributeIconSize 0
+skinparam backgroundColor white
+skinparam roundcorner 10
+skinparam class {
+    BackgroundColor PaleGreen
+    ArrowColor DeepSkyBlue
+    BorderColor DarkSlateGray
+}
+
+' Common Enums
+namespace Common {
+    enum AirCraftType {
+        Commercial
+        Cargo
+        Emergency
+        Military
+        Medical
+    }
+    
+    enum FlightState {
+        Holding
+        Approach
+        Landing
+        Taxi
+        AtGate
+        TakeoffRoll
+        Climb
+        Cruise
+    }
+    
+    enum RunwayType {
+        Arrival
+        Departure
+        Flexible
+    }
+    
+    enum Direction {
+        North
+        South
+        East
+        West
+    }
+}
+
+' Class definitions
+class Aircraft {
+    + std::string FlightNumber
+    + std::string Airline
+    + AirCraftType type
+    + Direction direction
+    + FlightState state
+    + Timer timer
+    + int speed
+    + int EmergencyNo
+    + int x_position, y_position
+    + bool HasViolation
+    + bool isFaulty
+    + bool isActive
+    + int aircraftIndex
+    + time_t queueEntryTime
+    + bool hasRunwayAssigned
+    
+    + Aircraft(int, const std::string&, AirCraftType)
+    + ~Aircraft()
+    + void SimulateStep()
+    + void UpdateSpeed()
+    + void checkForViolation()
+    + void checkForEmergency()
+    + bool isinAir()
+    + int calculatePriorityScore()
+    + bool isOnGround()
+    + bool isReadyForTakeOff()
+    + void RequestRunawayAssignment()
+    + void AssignRunaway()
+}
+
+class Airline {
+    + std::string name
+    + AirCraftType type
+    + int maxFlights
+    + std::vector<Aircraft> aircrafts
+}
+
+class AirlineManager {
+    - std::vector<Airline*> airlines
+    
+    + AirlineManager()
+    + ~AirlineManager()
+    + void initialize()
+    + std::vector<Airline*>& getAllAirlines()
+    + Airline* getAirlineByName(const std::string&)
+    + Airline* getRandomAirline()
+}
+
+class AirlinePortal {
+    + void viewActiveAVNs()
+    + void viewHistoricalAVNs()
+    + void handlePaymentSuccess(int avnId)
+}
+
+class ATCScontroller {
+    - FlightsScheduler scheduler
+    - int schedulingInterval
+    - time_t lastScheduleTime
+    - RunwayManager* runwayManager
+    
+    + ATCScontroller()
+    + void setRunwayManager(RunwayManager*)
+    + void monitorFlight()
+    + void assignRunway()
+    + void handleViolations()
+    + void scheduleArrival(Aircraft*)
+    + void scheduleDeparture(Aircraft*)
+    + FlightsScheduler* getScheduler()
+}
+
+class AVN {
+    + int id
+    + std::string airline
+    + std::string flightNumber
+    + AirCraftType aircraftType
+    + int recordedSpeed
+    + int permissibleSpeed
+    + time_t issueDateTime
+    + double fineAmount
+    + bool paymentStatus
+    + time_t dueDate
+    
+    + AVN()
+    + void generateReport()
+    + void updatePaymentStatus(bool paid)
+    + void sendConfirmation()
+}
+
+class FlightsScheduler {
+    - std::vector<Aircraft*> emergencyQueue
+    - std::vector<Aircraft*> arrivalQueue
+    - std::vector<Aircraft*> departureQueue
+    - std::mutex queueMutex
+    
+    + FlightsScheduler()
+    + void addEmergency(Aircraft*)
+    + void addArrival(Aircraft*)
+    + void addDeparture(Aircraft*)
+    + Aircraft* getNextEmergency()
+    + Aircraft* getNextArrival()
+    + Aircraft* getNextDeparture()
+    + int estimateWaitTime(Aircraft*)
+    + void scheduleFlight()
+}
+
+class RunwayClass {
+    + std::string id
+    + RunwayType type
+    + bool isOccupied
+    + int turn
+    
+    + RunwayClass()
+    + bool tryAssign(Aircraft&)
+    + void release()
+}
+
+class RunwayManager {
+    - std::vector<RunwayClass> runways
+    
+    + RunwayManager()
+    + ~RunwayManager()
+    + void initialize()
+    + RunwayClass* getRunwayByIndex(int)
+    + int getRunwayCount()
+    + std::string getStatusReport()
+}
+
+class Simulation {
+    - AirlineManager* airlineManager
+    - RunwayManager* runwayManager
+    - ATCScontroller* atcController
+    - SimulationManager* simulationManager
+    - int simulationDuration
+    - bool isRunning
+    
+    + Simulation()
+    + ~Simulation()
+    + bool initialize()
+    + void run()
+    + void stop()
+}
+
+class SimulationManager {
+    - ATCScontroller* atcController
+    - RunwayManager* runwayManager
+    
+    + SimulationManager(ATCScontroller*, RunwayManager*)
+    + void createRandomEmergency(const std::vector<Airline*>&)
+    + void logMessage(const std::string&)
+}
+
+class StripePayment {
+    + void processPayment(int avnId, double amount)
+    + void sendPaymentStatus(int avnId, bool success)
+}
+
+class Timer {
+    + void start()
+    + void stop()
+    + double getElapsedTime()
+}
+
+class VisualSimulator {
+    + void LoadGraphics()
+    + void Display()
+}
+
+' Relationships
+Aircraft --> "1" Common::AirCraftType : uses
+Aircraft --> "1" Common::Direction : uses
+Aircraft --> "1" Common::FlightState : uses
+
+Airline "1" *--> "*" Aircraft : contains
+Airline --> "1" Common::AirCraftType : has type
+
+AirlineManager "1" o--> "*" Airline : manages
+
+ATCScontroller --> "1" FlightsScheduler : uses
+ATCScontroller --> "1" RunwayManager : references
+
+RunwayClass --> "1" Common::RunwayType : uses
+RunwayClass --> "*" Aircraft : assigns
+
+RunwayManager "1" *--> "*" RunwayClass : contains
+
+Simulation "1" o--> "1" AirlineManager : uses
+Simulation "1" o--> "1" RunwayManager : uses
+Simulation "1" o--> "1" ATCScontroller : uses
+Simulation "1" o--> "1" SimulationManager : uses
+
+SimulationManager --> "1" ATCScontroller : references
+SimulationManager --> "1" RunwayManager : references
+
+@enduml

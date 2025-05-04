@@ -24,10 +24,10 @@ public:
     void stop();
     
     // Check if timer duration has elapsed
-    bool isTimeUp();
+    bool isTimeUp() const;
     
     // Get elapsed time in seconds
-    int getElapsedSeconds();
+    int getElapsedSeconds() const;
     
     // Set timer duration
     void setDuration(int seconds);

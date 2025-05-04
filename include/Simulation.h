@@ -14,6 +14,8 @@
 #include "SimulationManager.h"
 #include "RunwayManager.h"
 #include "ATCScontroller.h"
+#include "visual/Visualizer.h"
+#include "Timer.h"
 
 /**
  * The Simulation class acts as the main coordinator for the AirControlX system.
@@ -27,10 +29,16 @@ private:
     RunwayManager* runwayManager;
     SimulationManager* simulationManager;
     ATCScontroller* atcController;
+    Visualizer* visualizer;  // SFML visualization component
+    Timer timer;             // Timer for simulation duration
     
     // Simulation parameters
     int simulationDuration; // in seconds
     bool isRunning;
+    bool isPaused;         // Flag to track pause state
+
+    // Update simulation state (called in render loop)
+    void update();
 
 public:
     // Constructor and destructor
@@ -45,6 +53,17 @@ public:
     
     // Wait for the simulation to complete
     bool waitForCompletion();
+
+    // Pause/resume simulation
+    void togglePause();
+    bool isPausedState() const;
+
+    // Getters for visualizer access to data
+    AirlineManager* getAirlineManager() const { return airlineManager; }
+    RunwayManager* getRunwayManager() const { return runwayManager; }
+    ATCScontroller* getATCController() const { return atcController; }
+    int getElapsedTime() const { return timer.getElapsedSeconds(); }
+    int getRemainingTime() const { return simulationDuration - timer.getElapsedSeconds(); }
 };
 
 #endif // AIRCONTROLX_SIMULATION_H

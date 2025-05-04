@@ -1,4 +1,5 @@
 #include "../include/Simulation.h"
+#include "../include/visual/Visualizer.h"
 
 /**
  * Constructor initializes simulation components and default parameters
@@ -10,10 +11,12 @@ Simulation::Simulation()
     runwayManager = new RunwayManager();
     atcController = new ATCScontroller();
     simulationManager = new SimulationManager(atcController, runwayManager);
+    visualizer = new Visualizer();  // Create the visualizer component
     
     // Set default simulation parameters
     simulationDuration = 300; // 5 minutes
     isRunning = false;
+    isPaused = false;
     
     // Seed random number generator
     std::srand(static_cast<unsigned int>(std::time(nullptr)));
@@ -28,6 +31,7 @@ Simulation::~Simulation()
     delete runwayManager;
     delete atcController;
     delete simulationManager;
+    delete visualizer;  // Clean up visualizer
 }
 
 /**
@@ -36,7 +40,7 @@ Simulation::~Simulation()
 bool Simulation::initialize()
 {
     std::cout << "AirControlX - Automated Air Traffic Control System" << std::endl;
-    std::cout << "Module 2: Flight Scheduling Implementation" << std::endl << std::endl;
+    std::cout << "Module 3: SFML Visualization and Subsystems Integration" << std::endl << std::endl;
     
     try {
         // Initialize all the components
@@ -49,8 +53,20 @@ bool Simulation::initialize()
         runwayManager->initialize();
         
         // Set the runway manager in the ATC controller
-        // This is crucial! Without this, ATC can't manage runways
         atcController->setRunwayManager(runwayManager);
+        
+        // Initialize the visualizer
+        if (!visualizer->initialize()) {
+            std::cerr << "Failed to initialize visualizer!" << std::endl;
+            return false;
+        }
+        
+        // Connect simulation to visualizer (for data access)
+        visualizer->setSimulation(this);
+        
+        // Initialize and start the timer
+        timer.setDuration(simulationDuration);
+        timer.start();
         
         return true;
     }
@@ -83,16 +99,30 @@ bool Simulation::run()
         simulationManager->createRandomEmergency(airlineManager->getAllAirlines());
         
         std::cout << "Launching aircraft threads..." << std::endl;
-        sleep(1);  // Short pause for readability
         
         // Launch aircraft threads for each airline with a short delay between
         for (Airline* airline : airlineManager->getAllAirlines()) {
             simulationManager->launchAirlineThreads(airline);
-            sleep(1);  // Stagger launches for readability
+            // No sleep here - faster startup for visual version
         }
         
         std::cout << "All aircraft launched, simulation running..." << std::endl;
         
+        // Main SFML rendering loop
+        while (visualizer->isRunning() && !timer.isTimeUp()) {
+            // Handle window events (close, keyboard input)
+            visualizer->handleEvents();
+            
+            // Update simulation state if not paused
+            if (!isPaused) {
+                update();
+            }
+            
+            // Render current state
+            visualizer->render();
+        }
+        
+        isRunning = false;
         return true;
     }
     catch (const std::exception& e) {
@@ -103,15 +133,43 @@ bool Simulation::run()
 }
 
 /**
+ * Update simulation state
+ * This is called in the render loop to update simulation state
+ */
+void Simulation::update()
+{
+    // Currently, most of our updates happen in threads
+    // In future modules, we'll add more update logic here
+    
+    // This is where we'll update aircraft positions, check for violations, etc.
+}
+
+/**
  * Wait for the simulation to complete
  */
 bool Simulation::waitForCompletion()
 {
     if (isRunning) {
-        // Wait for all threads to complete
-        simulationManager->waitForCompletion();
-        isRunning = false;
+        // This is now handled by the SFML render loop in run()
+        // So we just return success
         std::cout << "\nSimulation complete!" << std::endl;
     }
-    return true; // Return success
+    return true;
+}
+
+/**
+ * Toggle pause state
+ */
+void Simulation::togglePause()
+{
+    isPaused = !isPaused;
+    std::cout << (isPaused ? "Simulation paused." : "Simulation resumed.") << std::endl;
+}
+
+/**
+ * Check if simulation is paused
+ */
+bool Simulation::isPausedState() const
+{
+    return isPaused;
 }

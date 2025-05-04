@@ -1,26 +1,39 @@
+#include "../include/VisualSimulator.h"
 #include <iostream>
-#include "../include/Simulation.h"
 
+/**
+ * Simple demonstration of the VisualSimulator class with SFML
+ * Shows a window with background sprite that can be closed with Escape
+ */
 int main() 
 {
-    // Initialize and run the simulation with SFML visualization
-    Simulation sim;
+    // Create our visual simulator
+    VisualSimulator visualSim;
     
-    // Initialize components (including visualizer)
-    if (!sim.initialize()) {
-        std::cerr << "Failed to initialize the simulation!" << std::endl;
+    // Try to load the graphics resources
+    if (!visualSim.loadGraphics()) 
+    {
+        std::cerr << "Failed to load graphics resources. Exiting." << std::endl;
         return 1;
     }
     
-    // Run simulation with integrated SFML render loop
-    if (!sim.run()) {
-        std::cerr << "Error running simulation!" << std::endl;
-        return 1;
+    std::cout << "SFML window created successfully!" << std::endl;
+    std::cout << "Press ESC key to close the window." << std::endl;
+    
+    // Main game loop - keep rendering while the window is open
+    while (visualSim.running()) 
+    {
+        // Handle any window events (close button, keyboard input)
+        visualSim.handleEvents();
+        
+        // Render the current frame
+        visualSim.display();
+        
+        // A small sleep to prevent CPU from running at 100%
+        // SFML's vertical sync should handle this, but just to be safe
+        sf::sleep(sf::milliseconds(10));
     }
     
-    // The waitForCompletion function is now just for cleanup
-    sim.waitForCompletion();
-    
-    std::cout << "Simulation ended successfully." << std::endl;
+    std::cout << "Window closed. Exiting program." << std::endl;
     return 0;
 }

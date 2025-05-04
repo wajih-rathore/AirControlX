@@ -30,11 +30,17 @@ private:
     // Reference to simulation (for accessing data)
     Simulation* simulation;
     
+    // Timer variables
+    sf::Clock timerClock;
+    int elapsedSeconds;
+    sf::Text timerText;
+    
     // Helper methods for rendering different UI components
     void renderRunwayStatus();
     void renderSimulationStats();
     void renderAircraftList();
     void renderEmergencyStatus();
+    void renderTimer();  // New method to render the timer
     
     // Helper method to create text with consistent styling
     sf::Text createText(const std::string& content, float x, float y, 
@@ -59,6 +65,9 @@ public:
     
     // Check if the window is still open
     bool isRunning() const;
+    
+    // Reset timer
+    void resetTimer();
 };
 
 #endif // AIRCONTROLX_VISUALIZER_H

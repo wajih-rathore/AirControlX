@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <cmath>  // Include this for std::sin function
 
 /**
  * Constructor initializes default values
@@ -11,6 +12,7 @@ Visualizer::Visualizer()
 {
     // Nothing to initialize here - we'll do it in initialize()
     simulation = nullptr;
+    elapsedSeconds = 0;
 }
 
 /**
@@ -19,6 +21,15 @@ Visualizer::Visualizer()
 Visualizer::~Visualizer() 
 {
     // SFML handles cleanup of resources automatically when objects are destroyed
+}
+
+/**
+ * Reset the timer to zero
+ */
+void Visualizer::resetTimer()
+{
+    timerClock.restart();
+    elapsedSeconds = 0;
 }
 
 /**
@@ -59,6 +70,13 @@ bool Visualizer::initialize()
     float scaleY = static_cast<float>(windowSize.y) / textureSize.y;
     
     backgroundSprite.setScale(scaleX, scaleY);
+    
+    // Initialize the timer text
+    timerText = createText("00:00", window.getSize().x - 100, 20, 24, sf::Color::White);
+    timerText.setStyle(sf::Text::Bold);
+    
+    // Start the timer
+    resetTimer();
     
     return true;
 }
@@ -137,23 +155,41 @@ void Visualizer::renderSimulationStats()
     // Draw panel title
     window.draw(createText("SIMULATION STATS", panelX, panelY, 24, sf::Color::Yellow));
     
-    // Draw simulation time
+    // Draw simulation time - now showing actual time from the simulation
     std::ostringstream timeStr;
-    timeStr << "Elapsed: " << std::setfill('0') << std::setw(2) << 0 << ":" 
-            << std::setfill('0') << std::setw(2) << 0;
+    int elapsedTime = simulation->getElapsedTime();
+    int minutes = elapsedTime / 60;
+    int seconds = elapsedTime % 60;
+    
+    timeStr << "Elapsed: " << std::setfill('0') << std::setw(2) << minutes << ":" 
+            << std::setfill('0') << std::setw(2) << seconds;
             
     window.draw(createText(timeStr.str(), panelX, panelY + 40, 20, sf::Color::White));
     
-    // Draw aircraft counts
-    window.draw(createText("Active Flights: 0", panelX, panelY + 70, 20, sf::Color::White));
-    window.draw(createText("In Queue: 0", panelX, panelY + 100, 20, sf::Color::White));
+    // Calculate remaining time
+    int remainingTime = simulation->getRemainingTime();
+    int remainingMinutes = remainingTime / 60;
+    int remainingSeconds = remainingTime % 60;
     
-    // Draw simulation status
-    window.draw(createText("Status: RUNNING", panelX, panelY + 130, 20, sf::Color::Green));
+    std::ostringstream remainingTimeStr;
+    remainingTimeStr << "Remaining: " << std::setfill('0') << std::setw(2) << remainingMinutes << ":" 
+                     << std::setfill('0') << std::setw(2) << remainingSeconds;
+    
+    window.draw(createText(remainingTimeStr.str(), panelX, panelY + 70, 20, sf::Color::White));
+    
+    // Draw simulation status based on paused state
+    std::string statusText = simulation->isPausedState() ? "PAUSED" : "RUNNING";
+    sf::Color statusColor = simulation->isPausedState() ? sf::Color::Yellow : sf::Color::Green;
+    
+    window.draw(createText("Status: " + statusText, panelX, panelY + 130, 20, statusColor));
+    
+    // Add instruction text
+    window.draw(createText("Press SPACE to pause/resume", panelX, panelY + 160, 16, sf::Color(200, 200, 200)));
+    window.draw(createText("Press ESC to exit", panelX, panelY + 185, 16, sf::Color(200, 200, 200)));
 }
 
 /**
- * Render aircraft list
+ * Render aircraft list with enhanced visual style
  */
 void Visualizer::renderAircraftList() 
 {
@@ -164,18 +200,46 @@ void Visualizer::renderAircraftList()
     const float panelX = 50;
     const float panelY = 200;
     
-    // Draw panel title
+    // Draw panel title with subtle background for better visibility
+    sf::RectangleShape titleBg(sf::Vector2f(300, 35));
+    titleBg.setPosition(panelX - 10, panelY - 5);
+    titleBg.setFillColor(sf::Color(0, 0, 0, 150));
+    window.draw(titleBg);
+    
     window.draw(createText("ACTIVE AIRCRAFT", panelX, panelY, 24, sf::Color::Yellow));
     
-    // For Module 3A, just draw placeholder data
+    // For now, draw placeholder data with a nicer background
     // In Module 3B, we'll integrate with actual aircraft data
-    window.draw(createText("PIA-1: Landing", panelX, panelY + 40, 18, sf::Color::White));
-    window.draw(createText("FedEx-2: Taxiing", panelX, panelY + 70, 18, sf::Color::White));
-    window.draw(createText("AirBlue-3: Departing", panelX, panelY + 100, 18, sf::Color::White));
+    const int entryCount = 3;
+    const std::string flights[entryCount] = {
+        "PIA-1: Landing",
+        "FedEx-2: Taxiing",
+        "AirBlue-3: Departing"
+    };
+    
+    const sf::Color flightColors[entryCount] = {
+        sf::Color(0, 255, 128),  // Green for landing
+        sf::Color(255, 255, 0),  // Yellow for taxiing 
+        sf::Color(0, 191, 255)   // Blue for departing
+    };
+    
+    // Draw each flight with a semi-transparent background
+    for (int i = 0; i < entryCount; i++) {
+        float y = panelY + 40 + (i * 30);
+        
+        // Background for each entry
+        sf::RectangleShape entryBg(sf::Vector2f(250, 25));
+        entryBg.setPosition(panelX - 5, y - 5);
+        entryBg.setFillColor(sf::Color(0, 0, 40, 150));
+        window.draw(entryBg);
+        
+        // Flight text
+        window.draw(createText(flights[i], panelX, y, 18, flightColors[i]));
+    }
 }
 
 /**
- * Render emergency status
+ * Render emergency status with visual enhancements
  */
 void Visualizer::renderEmergencyStatus() 
 {
@@ -186,11 +250,67 @@ void Visualizer::renderEmergencyStatus()
     const float panelX = 50;
     const float panelY = 400;
     
+    // Create a subtle background for the emergency status
+    sf::RectangleShape emergencyBg(sf::Vector2f(400, 35));
+    emergencyBg.setPosition(panelX - 10, panelY - 5);
+    emergencyBg.setFillColor(sf::Color(0, 0, 0, 150));
+    window.draw(emergencyBg);
+    
     // No emergency indicator (default state)
     window.draw(createText("EMERGENCY STATUS: NONE", panelX, panelY, 24, sf::Color::Green));
     
-    // For Module 3A, use placeholder data
-    // In Module 3B, we'll integrate with actual emergency data
+    // For Module 3A, we'll add a pulsating effect to draw attention to emergencies
+    // This will be a placeholder until Module 3B when we integrate with actual emergency data
+    static float pulseTime = 0.0f;
+    static sf::Clock pulseClock;
+    
+    // Create a pulsing effect for demonstration
+    pulseTime += pulseClock.restart().asSeconds();
+    float alpha = (std::sin(pulseTime * 3.0f) + 1.0f) * 0.5f * 255.0f;
+    
+    // Sample emergency indicator (will be populated with real data later)
+    sf::RectangleShape emergencyIndicator(sf::Vector2f(380, 30));
+    emergencyIndicator.setPosition(panelX, panelY + 40);
+    emergencyIndicator.setFillColor(sf::Color(150, 0, 0, static_cast<sf::Uint8>(alpha)));
+    window.draw(emergencyIndicator);
+    
+    // Will be replaced with actual emergency data in Module 3B
+}
+
+/**
+ * Render the timer in the top right corner
+ */
+void Visualizer::renderTimer()
+{
+    // Check if we need to update the elapsed seconds
+    int newSeconds = static_cast<int>(timerClock.getElapsedTime().asSeconds());
+    
+    if (newSeconds != elapsedSeconds)
+    {
+        // Update our elapsed seconds counter
+        elapsedSeconds = newSeconds;
+        
+        // Calculate minutes and seconds
+        int minutes = elapsedSeconds / 60;
+        int seconds = elapsedSeconds % 60;
+        
+        // Format the time as "MM:SS"
+        std::ostringstream timeStr;
+        timeStr << std::setfill('0') << std::setw(2) << minutes << ":"
+                << std::setfill('0') << std::setw(2) << seconds;
+        
+        // Update the timer text
+        timerText.setString(timeStr.str());
+    }
+    
+    // Add a subtle background for better visibility
+    sf::RectangleShape timerBg(sf::Vector2f(80, 35));
+    timerBg.setPosition(timerText.getPosition().x - 5, timerText.getPosition().y - 5);
+    timerBg.setFillColor(sf::Color(0, 0, 0, 150));
+    
+    // Draw background and timer
+    window.draw(timerBg);
+    window.draw(timerText);
 }
 
 /**
@@ -211,6 +331,7 @@ void Visualizer::render()
     renderSimulationStats();
     renderAircraftList();
     renderEmergencyStatus();
+    renderTimer();  // Add timer rendering
     
     // Display what was drawn (swap buffers)
     window.display();

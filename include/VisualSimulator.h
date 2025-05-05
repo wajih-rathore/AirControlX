@@ -18,6 +18,34 @@ private:
     // Background texture and sprite
     sf::Texture backgroundTexture;
     sf::Sprite backgroundSprite;
+
+    //Cabin Texture and sprite
+    sf::Texture cabinTexture;
+    sf::Sprite cabinSprite;
+
+    //Runway A Texture and sprite
+    sf::Texture runwayATexture;
+    sf::Sprite runwayASprite;
+
+    //Runway B Texture and sprite
+    sf::Texture runwayBTexture;
+    sf::Sprite runwayBSprite;
+
+    //Runway C Texture and sprite
+    sf::Texture runwayCTexture;
+    sf::Sprite runwayCSprite;
+    
+    //Commercial Aircraft Texture and sprite
+    sf::Texture commercialAircraftTexture;
+    sf::Sprite commercialAircraftSprite;
+
+    //Cargo Aircraft Texture and sprite
+    sf::Texture cargoAircraftTexture;
+    sf::Sprite cargoAircraftSprite;
+
+    //Military Aircraft Texture and sprite
+    sf::Texture militaryAircraftTexture;
+    sf::Sprite militaryAircraftSprite;
     
     // Font for text rendering
     sf::Font font;
@@ -38,7 +66,7 @@ public:
     
     // Display the simulation visually (main render loop)
     void display();
-    
+
     // Handle window events (close, keyboard input)
     void handleEvents();
     

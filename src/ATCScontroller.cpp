@@ -11,7 +11,6 @@ ATCScontroller::ATCScontroller()
     schedulingInterval = 1;  // Schedule every 1 second
     lastScheduleTime = time(NULL);
     runwayManager = nullptr; // Initialize to nullptr, must be set later with setRunwayManager
-    avnPipeWriteEnd = -1;    // Initialize pipe file descriptor to invalid value
 }
 
 // Set the runway manager reference
@@ -23,17 +22,11 @@ void ATCScontroller::setRunwayManager(RunwayManager* rwManager)
 // Set the pipe for communication with AVN Generator
 void ATCScontroller::setAVNPipe(int pipeWriteEnd)
 {
-    avnPipeWriteEnd = pipeWriteEnd;
+    // Forward the pipe to the radar system
+    radar.setAVNPipe(pipeWriteEnd);
     
     // Double check that the pipe is valid
-    if (avnPipeWriteEnd <= 0)
-    {
-        cerr << "WARNING: Invalid AVN pipe file descriptor provided!" << endl;
-    }
-    else 
-    {
-        cout << "AVN pipe set successfully in ATCScontroller" << endl;
-    }
+    cout << "AVN pipe set successfully in ATCScontroller" << endl;
 }
 
 // Get count of active violations for the UI
@@ -282,133 +275,9 @@ void ATCScontroller::assignRunway()
 // Handle violations detected by radar monitoring
 void ATCScontroller::handleViolations()
 {
-    // This function detects aircraft speed violations and sends them to the AVN Generator process
-    // It's called periodically from the radar monitoring thread
-    
-    // Access our active flights from the scheduler
-    // Using const reference since we only need to read from the vector, not modify it
+    // Delegate to the radar system to handle violations
     const std::vector<Aircraft*>& activeFlights = scheduler.getActiveFlights();
-    
-    // Check if we have a pipe to communicate with AVN Generator
-    if (avnPipeWriteEnd <= 0)
-    {
-        // No pipe set up - can't send violations
-        std::cout << "ATCScontroller: No AVN pipe set up - can't send violations" << std::endl;
-        return;
-    }
-    
-    // Loop through all active flights and check for speed violations
-    for (Aircraft* aircraft : activeFlights)
-    {
-        // Skip aircraft that already have active violations
-        if (aircraft->hasActiveViolation)
-        {
-            continue;
-        }
-        
-        // Check for speed violations based on current state
-        bool speedViolation = false;
-        int minAllowed = 0;
-        int maxAllowed = 0;
-        
-        // Set allowed speed range based on aircraft state
-        // Converting from FlightState to our internal state handling
-        switch (aircraft->state)
-        {
-            case FlightState::Holding:
-                minAllowed = 400;
-                maxAllowed = 600;
-                speedViolation = (aircraft->speed > maxAllowed);
-                break;
-                
-            case FlightState::Approach:
-                minAllowed = 240;
-                maxAllowed = 290;
-                speedViolation = (aircraft->speed < minAllowed || aircraft->speed > maxAllowed);
-                break;
-                
-            case FlightState::Landing:
-                minAllowed = 30; // Landing should end below this
-                maxAllowed = 240; // Start of landing
-                speedViolation = (aircraft->speed > maxAllowed);
-                break;
-                
-            case FlightState::Taxi:
-                minAllowed = 15;
-                maxAllowed = 30;
-                speedViolation = (aircraft->speed > maxAllowed);
-                break;
-                
-            case FlightState::AtGate:
-                minAllowed = 0;
-                maxAllowed = 5;
-                speedViolation = (aircraft->speed > 10); // Violation if > 10
-                break;
-                
-            case FlightState::TakeoffRoll:
-                minAllowed = 0;
-                maxAllowed = 290;
-                speedViolation = (aircraft->speed > maxAllowed);
-                break;
-                
-            case FlightState::Climb:
-                minAllowed = 250;
-                maxAllowed = 463;
-                speedViolation = (aircraft->speed > maxAllowed);
-                break;
-                
-            case FlightState::Cruise: // This was previously called "Departure" in the code
-                minAllowed = 800;
-                maxAllowed = 900;
-                speedViolation = (aircraft->speed < minAllowed || aircraft->speed > maxAllowed);
-                break;
-                
-            default:
-                // Unknown state - no violation check
-                break;
-        }
-        
-        // If we found a speed violation, send it to AVN Generator
-        if (speedViolation)
-        {
-            std::cout << "VIOLATION DETECTED: " << aircraft->FlightNumber 
-                 << " (" << aircraft->Airline << ") - Speed: " << aircraft->speed 
-                 << " km/h (Allowed: " << minAllowed << "-" << maxAllowed << " km/h)" << std::endl;
-                 
-            // Mark aircraft as having active violation
-            aircraft->hasActiveViolation = true;
-            
-            // Create violation data to send through pipe
-            ViolationData violation;
-            
-            // Copy aircraft data to the struct with proper string handling
-            // Using strncpy to avoid buffer overflows (a common C/C++ security issue)
-            strncpy(violation.flightNumber, aircraft->FlightNumber.c_str(), sizeof(violation.flightNumber) - 1);
-            violation.flightNumber[sizeof(violation.flightNumber) - 1] = '\0';  // Ensure null-termination
-            
-            strncpy(violation.airLine, aircraft->Airline.c_str(), sizeof(violation.airLine) - 1);
-            violation.airLine[sizeof(violation.airLine) - 1] = '\0';  // Ensure null-termination
-            
-            // Set speed and allowed range
-            violation.speed = aircraft->speed;
-            violation.minAllowed = minAllowed;
-            violation.maxAllowed = maxAllowed;
-            
-            // Send through pipe to AVN Generator process
-            // The write() might fail if the pipe is full or broken - we should handle that
-            ssize_t bytesWritten = write(avnPipeWriteEnd, &violation, sizeof(ViolationData));
-            
-            if (bytesWritten != sizeof(ViolationData))
-            {
-                std::cerr << "ERROR: Failed to send violation data to AVN Generator" << std::endl;
-                // In a real system, we might want to retry or queue this for later
-            }
-            else 
-            {
-                std::cout << "Violation data sent to AVN Generator process" << std::endl;
-            }
-        }
-    }
+    radar.handleViolations(activeFlights);
 }
 
 // Add an arrival flight to be scheduled
@@ -426,4 +295,12 @@ void ATCScontroller::scheduleDeparture(Aircraft* aircraft)
 FlightsScheduler* ATCScontroller::getScheduler()
 {
     return &scheduler;
+}
+
+// Test function to simulate a violation
+void ATCScontroller::simulateViolation(const std::string& flightNumber, const std::string& airline, 
+                                      int speed, int minAllowed, int maxAllowed)
+{
+    // Delegate to the radar to simulate a violation
+    radar.simulateViolation(flightNumber, airline, speed, minAllowed, maxAllowed);
 }

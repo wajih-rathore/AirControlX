@@ -29,6 +29,10 @@ struct ViolationData
 struct PaymentData 
 {
     char avnID[30];         // Unique AVN identifier
+    char flightNumber[20];  // Aircraft ID (e.g., "PK123")
+    char aircraftType[20];  // Type of aircraft (e.g., "Commercial", "Cargo", "Emergency")
+    int amountToPay;        // Amount to be paid
+    int amountPaid;         // Amount that was actually paid
     bool paid;              // Payment status (true if paid)
 };
 

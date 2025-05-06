@@ -4,6 +4,7 @@
 #include "FlightsScheduler.h"
 #include "Runway.h"
 #include "RunwayManager.h"
+#include "Radar.h"
 #include <vector>
 
 /**
@@ -17,7 +18,7 @@ private:
     int schedulingInterval;          // How often to run scheduling (in seconds)
     time_t lastScheduleTime;         // Last time we ran the scheduling algorithm
     RunwayManager* runwayManager;    // Pointer to runway manager (now we're properly modular!)
-    int avnPipeWriteEnd;             // File descriptor for pipe to AVN Generator process
+    Radar radar;                     // Radar system for detecting violations
     
 public:
     // Constructor
@@ -35,7 +36,7 @@ public:
     // Assign runways to aircraft
     void assignRunway();
     
-    // Handle detected violations
+    // Handle detected violations (now delegates to Radar)
     void handleViolations();
     
     // Get count of active violations (for the UI)
@@ -50,6 +51,10 @@ public:
     
     // Get the scheduler
     FlightsScheduler* getScheduler();
+    
+    // Test function to simulate a violation
+    void simulateViolation(const std::string& flightNumber, const std::string& airline, 
+                          int speed, int minAllowed, int maxAllowed);
 };
 
 #endif // AIRCONTROLX_ATCSCONTROLLER_H

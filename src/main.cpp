@@ -2,6 +2,8 @@
 #include "../include/AVNGenerator.h"
 #include "../include/ATCScontroller.h"
 #include "../include/RunwayManager.h"
+#include "../include/AirlinePortal.h"
+#include "../include/StripePayment.h"
 #include <iostream>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -165,12 +167,91 @@ int main(int argc, char* argv[])
     
     // Parent process continues...
     std::cout << "AVN Generator process forked with PID: " << avnGeneratorPid << std::endl;
-    
+
+    // Now fork the Airline Portal process
+    int airlineToStripePipe[2]; // Airline Portal -> StripePay pipe
+    if (pipe(airlineToStripePipe) < 0) 
+    {
+        std::cerr << "Failed to create Airline Portal -> StripePay pipe. Exiting." << std::endl;
+        return 1;
+    }
+
+    airlinePortalPid = fork();
+
+    if (airlinePortalPid < 0) 
+    {
+        std::cerr << "Failed to fork Airline Portal process. Exiting." << std::endl;
+        return 1;
+    }
+    else if (airlinePortalPid == 0) 
+    {
+        // Child process - Airline Portal
+        // Close unused pipe ends in Airline Portal
+        close(atcsToAvnPipe[0]);
+        close(atcsToAvnPipe[1]);
+        close(avnToAirlinePipe[1]);  // AP doesn't write to AVN->Airline pipe
+        close(stripeToAvnPipe[0]);
+        close(stripeToAvnPipe[1]);
+        
+        // Create the Airline Portal instance
+        AirlinePortal airlinePortal;
+        
+        // Initialize with the relevant pipe file descriptors
+        airlinePortal.initialize(avnToAirlinePipe, airlineToStripePipe);
+        
+        // Run the Airline Portal
+        airlinePortal.run();
+        
+        // This should never be reached as airlinePortal.run() has an infinite loop
+        exit(0);
+    }
+
+    // Parent process continues...
+    std::cout << "Airline Portal process forked with PID: " << airlinePortalPid << std::endl;
+
+    // Finally, fork the StripePay process
+    stripePayPid = fork();
+
+    if (stripePayPid < 0) 
+    {
+        std::cerr << "Failed to fork StripePay process. Exiting." << std::endl;
+        return 1;
+    }
+    else if (stripePayPid == 0) 
+    {
+        // Child process - StripePay
+        // Close unused pipe ends in StripePay
+        close(atcsToAvnPipe[0]);
+        close(atcsToAvnPipe[1]); 
+        close(avnToAirlinePipe[0]);
+        close(avnToAirlinePipe[1]);
+        close(airlineToStripePipe[1]);  // SP doesn't write to Airline->StripePay pipe
+        
+        // Create the StripePay instance
+        StripePayment stripePay;
+        
+        // Initialize with the relevant pipe file descriptors
+        stripePay.initialize(airlineToStripePipe, stripeToAvnPipe);
+        
+        // Run the StripePay service
+        stripePay.run();
+        
+        // This should never be reached as stripePay.run() has an infinite loop
+        exit(0);
+    }
+
+    // Parent process continues...
+    std::cout << "StripePay process forked with PID: " << stripePayPid << std::endl;
+
     // Close unused ends of pipes in parent process
     close(atcsToAvnPipe[0]);   // Parent doesn't read from ATCS->AVN pipe
+    close(avnToAirlinePipe[0]); // Parent doesn't read from AVN->Airline pipe
     close(avnToAirlinePipe[1]); // Parent doesn't write to AVN->Airline pipe
     close(stripeToAvnPipe[0]);  // Parent doesn't read from StripePay->AVN pipe
-    
+    close(stripeToAvnPipe[1]);  // Parent doesn't write to StripePay->AVN pipe
+    close(airlineToStripePipe[0]); // Parent doesn't read from Airline->StripePay pipe
+    close(airlineToStripePipe[1]); // Parent doesn't write to Airline->StripePay pipe
+
     // Set up ATCS Controller with pipe to AVN Generator
     ATCScontroller atcsController;
     RunwayManager runwayManager;
@@ -236,3 +317,4 @@ int main(int argc, char* argv[])
     cleanupProcesses(0);
     return 0;
 }
+

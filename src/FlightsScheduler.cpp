@@ -22,6 +22,12 @@ void FlightsScheduler::addArrival(Aircraft* aircraft)
     // Sort the queue by priority (now that we've added a new aircraft)
     sortQueues();
     
+    // Add to active flights list if it's not already there
+    if (std::find(activeFlights.begin(), activeFlights.end(), aircraft) == activeFlights.end())
+    {
+        activeFlights.push_back(aircraft);
+    }
+    
     // Unlock the mutex when we're done
     arrivalMutex.unlock();
 }
@@ -39,6 +45,12 @@ void FlightsScheduler::addDeparture(Aircraft* aircraft)
     
     // Sort the queue by priority (now that we've added a new aircraft)
     sortQueues();
+    
+    // Add to active flights list if it's not already there
+    if (std::find(activeFlights.begin(), activeFlights.end(), aircraft) == activeFlights.end())
+    {
+        activeFlights.push_back(aircraft);
+    }
     
     // Unlock the mutex when we're done
     departureMutex.unlock();
@@ -240,4 +252,14 @@ void FlightsScheduler::scheduleFlight()
 {
     // This will be implemented as part of the ATCScontroller logic
     // For now, we've laid the groundwork with our priority queues
+}
+
+// Get all currently active flights (both arrival and departure)
+const std::vector<Aircraft*>& FlightsScheduler::getActiveFlights() const
+{
+    // This method doesn't need to lock anything because it just returns a reference
+    // The caller is responsible for not modifying the vector directly
+    // If they need to modify it, they should use the addArrival/addDeparture methods
+    
+    return activeFlights;
 }

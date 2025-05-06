@@ -41,6 +41,13 @@ public:
     
     // Schedule flights based on priority and timing
     void scheduleFlight();
+    
+    // Get all currently active flights (both arrival and departure)
+    const std::vector<Aircraft*>& getActiveFlights() const;
+    
+private:
+    // Vector to track all active flights
+    std::vector<Aircraft*> activeFlights;
 };
 
 #endif // AIRCONTROLX_FLIGHTSSCHEDULER_H

@@ -21,6 +21,7 @@ public:
     int EmergencyNo;           // Emergency level (0 for no emergency)
     int x_position, y_position;   // The Current (x, y) position for the plane 
     bool HasViolation;         // Flag for speed/rule violations
+    bool hasActiveViolation;   // Flag for current active violation with AVN
     bool isFaulty;             // Flag for faulty aircraft
     bool isActive;             // Flag for active flight
     int aircraftIndex;         // Tells which index the aircraft belongs to in AirLine
@@ -64,6 +65,11 @@ public:
     //Update the position of the aircraft
     void updatePosition();
     
+    // Clear active violation after payment
+    void clearActiveViolation();
+    
+    // Get current state name as string (for UI display)
+    std::string getStateName() const;
 };
 
 #endif // AIRCONTROLX_AIRCRAFT_H

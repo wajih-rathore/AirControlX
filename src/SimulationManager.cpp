@@ -1,6 +1,7 @@
 #include "../include/SimulationManager.h"
 #include <cstdlib>
 #include <ctime>
+#include <sstream>
 
 // Struct that holds thread arguments for flight simulation
 struct SimulationManager::ThreadArgs 
@@ -28,6 +29,7 @@ SimulationManager::SimulationManager(ATCScontroller* atc, RunwayManager* rwm)
 {
     // Initialize the mutex for thread-safe console output
     pthread_mutex_init(&consoleMutex, nullptr);
+    pthread_mutex_init(&visualDataMutex, nullptr);
 }
 
 /**
@@ -37,6 +39,7 @@ SimulationManager::~SimulationManager()
 {
     // Destroy the mutex when done
     pthread_mutex_destroy(&consoleMutex);
+    pthread_mutex_destroy(&visualDataMutex);
 }
 
 /**
@@ -65,7 +68,7 @@ void* SimulationManager::flightThreadFunction(void* arg)
     {
         // Arrival flow - either North or South
         plane->direction = (plane->aircraftIndex % 4 == 0) ? Direction::North : Direction::South;
-        
+
         //NOTE : WE CAN DO THE POSITION WALA PART OR NOT, TO BE DECIDEDDDDDDDD ????
         /* Commenting this for now, same for the departures
         // Randomly generate x and y positions based on direction
@@ -388,6 +391,9 @@ void SimulationManager::waitForCompletion()
     
     // Join the ATC controller thread
     pthread_join(atcControllerThread, nullptr);
+    
+    // Stop visualization thread
+    stopVisualization();
 }
 
 /**
@@ -426,4 +432,213 @@ void SimulationManager::logMessage(const std::string& message)
     }
     
     pthread_mutex_unlock(&consoleMutex);
+}
+
+// ======== SFML Visualization Integration Functions ========
+
+/**
+ * Set the visualizer component for the simulation
+ * Links the SFML visual renderer to the simulation
+ */
+void SimulationManager::setVisualizer(VisualSimulator* vis)
+{
+    // Lock mutex for thread safety when updating visualizer pointer
+    pthread_mutex_lock(&visualDataMutex);
+    
+    visualizer = vis;
+    
+    // Make sure to set the runway manager in the visualizer
+    if (visualizer && runwayManager)
+    {
+        visualizer->setRunwayManager(runwayManager);
+    }
+    
+    pthread_mutex_unlock(&visualDataMutex);
+}
+
+/**
+ * Launch visualization thread
+ * Starts a separate thread for SFML rendering
+ */
+bool SimulationManager::launchVisualizerThread()
+{
+    // Don't launch if we don't have a visualizer
+    if (!visualizer)
+    {
+        logMessage("Warning: Cannot launch visualizer thread - no visualizer set");
+        return false;
+    }
+    
+    // Initialize visualizer flag
+    visualizationActive = true;
+    
+    // Load SFML graphics
+    if (!visualizer->loadGraphics())
+    {
+        logMessage("Error: Failed to load SFML graphics resources");
+        return false;
+    }
+    
+    // Set initial data in visualizer
+    updateVisualizationData();
+    
+    // Create thread with our static function as entry point
+    int threadResult = pthread_create(&visualizerThread, NULL, 
+                                    visualizerThreadFunction, this);
+    
+    if (threadResult != 0)
+    {
+        logMessage("Error: Failed to create visualizer thread");
+        return false;
+    }
+    
+    logMessage("Visualizer thread launched successfully");
+    return true;
+}
+
+/**
+ * Get all active aircraft for visualization
+ * Thread-safe method to access aircraft data for rendering
+ */
+std::vector<Aircraft*> SimulationManager::getActiveAircraftForVisualization()
+{
+    std::vector<Aircraft*> activeAircraft;
+    
+    // Safety check for ATC controller
+    if (!atcController) return activeAircraft;
+    
+    // Access the scheduler through the ATC controller
+    // This would need to be thread-safe in the ATC controller too
+    if (atcController->getFlightScheduler())
+    {
+        // Get active flights from the scheduler
+        activeAircraft = atcController->getFlightScheduler()->getActiveFlights();
+    }
+    
+    return activeAircraft;
+}
+
+/**
+ * Update visualization data
+ * Safely transfers simulation state to visualization layer
+ */
+void SimulationManager::updateVisualizationData()
+{
+    // Skip if no visualizer
+    if (!visualizer) return;
+    
+    // Lock for thread safety
+    pthread_mutex_lock(&visualDataMutex);
+    
+    // Set aircraft data in visualizer
+    std::vector<Aircraft*> activeAircraft = getActiveAircraftForVisualization();
+    visualizer->setAircraftList(activeAircraft);
+    
+    // Ensure runway manager is set
+    visualizer->setRunwayManager(runwayManager);
+    
+    pthread_mutex_unlock(&visualDataMutex);
+}
+
+/**
+ * Stop visualization
+ * Safely stops the visualization thread
+ */
+void SimulationManager::stopVisualization()
+{
+    // Set flag to signal thread to stop
+    visualizationActive = false;
+    
+    // Wait for thread to finish (if it exists)
+    pthread_join(visualizerThread, NULL);
+    
+    logMessage("Visualization stopped");
+}
+
+/**
+ * Check if visualization is active
+ * Returns whether the visualization thread is running
+ */
+bool SimulationManager::isVisualizationActive() const
+{
+    return visualizationActive;
+}
+
+/**
+ * Get simulation statistics for UI display
+ * Returns formatted statistics about the simulation
+ */
+std::string SimulationManager::getSimulationStatistics() const
+{
+    std::stringstream stats;
+    
+    // Add general simulation status
+    stats << "===== Simulation Statistics =====" << std::endl;
+    stats << "Aircraft threads: " << aircraftThreads.size() << std::endl;
+    
+    // Add runway statistics if available
+    if (runwayManager)
+    {
+        stats << runwayManager->getStatusReport() << std::endl;
+    }
+    
+    // Add ATC controller statistics if available
+    if (atcController)
+    {
+        // You could add ATC stats here
+        stats << "ATC Controller: Active" << std::endl;
+    }
+    
+    return stats.str();
+}
+
+/**
+ * Get collection of all airlines for visualization
+ * Returns list of all airlines in the simulation
+ */
+std::vector<Airline*> SimulationManager::getAirlinesForVisualization() const
+{
+    // This would need to be implemented based on how airlines are stored
+    // For now, return empty vector (you'll need to adapt this)
+    return std::vector<Airline*>();
+}
+
+/**
+ * Visualization thread function
+ * Handles the SFML rendering loop in a separate thread
+ */
+void* SimulationManager::visualizerThreadFunction(void* arg)
+{
+    // Cast the arg back to SimulationManager
+    SimulationManager* simManager = static_cast<SimulationManager*>(arg);
+    
+    // Safety check
+    if (!simManager || !simManager->visualizer)
+    {
+        return NULL;
+    }
+    
+    // Get reference to visualizer
+    VisualSimulator* vis = simManager->visualizer;
+    
+    // Main visualization loop
+    simManager->logMessage("Starting visualization loop");
+    
+    while (simManager->visualizationActive && vis->running())
+    {
+        // Handle window events (close, keyboard input)
+        vis->handleEvents();
+        
+        // Update visualization data from simulation
+        simManager->updateVisualizationData();
+        
+        // Render the frame
+        vis->display();
+        
+        // Sleep to avoid using 100% CPU
+        usleep(16667); // About 60 FPS (1/60 second in microseconds)
+    }
+    
+    simManager->logMessage("Visualization loop ended");
+    return NULL;
 }

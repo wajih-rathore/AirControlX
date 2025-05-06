@@ -6,6 +6,8 @@
 #include "RunwayManager.h"
 #include "Radar.h"
 #include <vector>
+#include <mutex>
+#include <string>
 
 /**
  * ATCScontroller class for monitoring and managing air traffic.
@@ -19,6 +21,9 @@ private:
     time_t lastScheduleTime;         // Last time we ran the scheduling algorithm
     RunwayManager* runwayManager;    // Pointer to runway manager (now we're properly modular!)
     Radar radar;                     // Radar system for detecting violations
+    
+    // Mutex for thread-safe access to controller data
+    std::mutex controllerMutex;
     
 public:
     // Constructor
@@ -52,9 +57,56 @@ public:
     // Get the scheduler
     FlightsScheduler* getScheduler();
     
+    // Alias for getScheduler() for compatibility
+    FlightsScheduler* getFlightScheduler();
+    
     // Test function to simulate a violation
     void simulateViolation(const std::string& flightNumber, const std::string& airline, 
                           int speed, int minAllowed, int maxAllowed);
+    
+    // ======== SFML Visualization Helper Functions ========
+    
+    /**
+     * Get all active flights for visualization
+     * Returns a thread-safe copy of all active flights
+     */
+    std::vector<Aircraft*> getAllActiveFlights() const;
+    
+    /**
+     * Get status text for visualization
+     * Returns formatted text about ATC status for the UI
+     */
+    std::string getStatusText() const;
+    
+    /**
+     * Get flight with highest priority
+     * Returns the flight currently with highest priority in the scheduling system
+     */
+    Aircraft* getHighestPriorityFlight() const;
+    
+    /**
+     * Get flights with specific state
+     * Returns all flights currently in the specified flight state
+     */
+    std::vector<Aircraft*> getFlightsByState(FlightState state) const;
+    
+    /**
+     * Get flights by emergency level
+     * Returns all flights with the specified emergency level
+     */
+    std::vector<Aircraft*> getFlightsByEmergencyLevel(int emergencyLevel) const;
+    
+    /**
+     * Get flights waiting for runway
+     * Returns all flights waiting for runway assignment
+     */
+    std::vector<Aircraft*> getFlightsWaitingForRunway() const;
+    
+    /**
+     * Get flight counts by type
+     * Returns array with counts of each aircraft type [commercial, cargo, military, emergency, medical]
+     */
+    int* getFlightCountsByType() const;
 };
 
 #endif // AIRCONTROLX_ATCSCONTROLLER_H

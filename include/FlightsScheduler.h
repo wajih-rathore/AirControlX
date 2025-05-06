@@ -31,7 +31,8 @@ public:
     // Get next flights to be scheduled (highest priority first)
     Aircraft* getNextArrival();
     Aircraft* getNextDeparture();
-    Aircraft* getNextEmergency(); // Checks both queues for emergency flights
+    Aircraft* getNextEmergency() const; // Const version - just peeks at emergencies without removing
+    Aircraft* removeNextEmergency();    // Non-const version - finds and removes highest priority emergency
     
     // Sort queues by priority score
     void sortQueues();
@@ -44,6 +45,50 @@ public:
     
     // Get all currently active flights (both arrival and departure)
     const std::vector<Aircraft*>& getActiveFlights() const;
+    
+    // ======== SFML Visualization Abstraction Functions ========
+    
+    /**
+     * Get queue statistics for visualization
+     * Returns array with [total active, arrivals, departures, emergency]
+     */
+    int* getQueueStatistics() const;
+    
+    /**
+     * Get all active emergency aircraft
+     * Returns vector of pointers to emergency aircraft for visualization
+     */
+    std::vector<Aircraft*> getActiveEmergencyAircraft() const;
+    
+    /**
+     * Get all aircraft with violations
+     * Returns vector of pointers to aircraft with violations
+     */
+    std::vector<Aircraft*> getAircraftWithViolations() const;
+    
+    /**
+     * Get aircraft queue by type
+     * Returns vector of pointers to aircraft of specified type
+     */
+    std::vector<Aircraft*> getAircraftByType(AirCraftType type) const;
+    
+    /**
+     * Get aircraft by flight state
+     * Returns vector of pointers to aircraft in the specified state
+     */
+    std::vector<Aircraft*> getAircraftByState(FlightState state) const;
+    
+    /**
+     * Get aircraft for visualization at specified coordinates
+     * Returns aircraft located at the given display coordinates (if any)
+     */
+    Aircraft* getAircraftAtPosition(int x, int y, int radius) const;
+    
+    /**
+     * Get status summary text for display
+     * Returns formatted text with queue statistics
+     */
+    std::string getStatusSummary() const;
     
 private:
     // Vector to track all active flights

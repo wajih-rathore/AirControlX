@@ -124,18 +124,20 @@ void Aircraft::checkForEmergency() {
 }
 
 // Check if aircraft is in an airborne state
-bool Aircraft::isinAir() {
+bool Aircraft::isinAir() const {
     return (state == FlightState::Holding || state == FlightState::Approach || 
             state == FlightState::Climb || state == FlightState::Cruise);
 }
 
 // Check if aircraft is on the ground
-bool Aircraft::isOnGround() {
+bool Aircraft::isOnGround() const
+{
     return (state == FlightState::Taxi || state == FlightState::AtGate);
 }
 
 // Check if aircraft is ready for takeoff
-bool Aircraft::isReadyForTakeOff() {
+bool Aircraft::isReadyForTakeOff() const
+{
     return (state == FlightState::AtGate);
 }
 
@@ -209,5 +211,226 @@ void Aircraft::updatePosition() {
         x_position += speed / 60;  // Move East
     } else if (direction == Direction::West) {
         x_position -= speed / 60;  // Move West
+    }
+}
+
+// Get current state name as string (for UI display)
+std::string Aircraft::getStateName() const {
+    switch (state) {
+        case FlightState::Holding: return "Holding";
+        case FlightState::Approach: return "Approaching";
+        case FlightState::Landing: return "Landing";
+        case FlightState::Taxi: return "Taxiing";
+        case FlightState::AtGate: return "At Gate";
+        case FlightState::TakeoffRoll: return "Taking Off";
+        case FlightState::Climb: return "Climbing";
+        case FlightState::Cruise: return "Cruising";
+        default: return "Unknown";
+    }
+}
+
+// ======== SFML Visualization Abstraction Functions ========
+
+/**
+ * Get aircraft display name for SFML UI
+ * Returns a formatted string with flight number and current state
+ */
+std::string Aircraft::getDisplayName() const 
+{
+    // Format: "PIA-1: Taxiing" or "PIA-1 [EMERG]: Landing"
+    std::string displayName = FlightNumber;
+    
+    // Add emergency indicator if applicable
+    if (EmergencyNo > 0) {
+        displayName += " [EMERG]";
+    }
+    
+    // Add violation indicator if applicable
+    if (HasViolation || hasActiveViolation) {
+        displayName += " [VIOL]";
+    }
+    
+    // Add state
+    displayName += ": " + getStateName();
+    
+    return displayName;
+}
+
+/**
+ * Get aircraft status for SFML rendering
+ * Returns a formatted status string with additional information
+ */
+std::string Aircraft::getStatusText() const 
+{
+    // Start with the speed
+    std::string status = "Speed: " + std::to_string(speed) + " km/h";
+    
+    // Add runway assignment status if applicable
+    if (hasRunwayAssigned) {
+        status += " | Runway Assigned";
+    }
+    
+    return status;
+}
+
+/**
+ * Get appropriate rotation angle for aircraft sprite
+ * Maps the aircraft direction to degrees for SFML sprite rotation
+ */
+float Aircraft::getRotationAngle() const 
+{
+    // Map direction to rotation angle
+    // Note: SFML uses counterclockwise rotation with 0 pointing right
+    switch (direction) {
+        case Direction::North: return 270.0f;  // Up
+        case Direction::South: return 90.0f;   // Down
+        case Direction::East: return 0.0f;     // Right
+        case Direction::West: return 180.0f;   // Left
+        default: return 0.0f;
+    }
+}
+
+/**
+ * Get appropriate asset name for aircraft based on type
+ * Returns the appropriate texture filename to use for this aircraft
+ */
+std::string Aircraft::getAssetName() const 
+{
+    // Return the appropriate asset filename based on aircraft type
+    switch (type) {
+        case AirCraftType::Commercial: return "Commercial_Whole.png";
+        case AirCraftType::Cargo: return "Cargo_Whole.png";
+        case AirCraftType::Military: return "Military_Whole.png";
+        case AirCraftType::Emergency: 
+        case AirCraftType::Medical:
+            // For emergency/medical aircraft, use commercial with a different color
+            return "Commercial_Whole.png";
+        default: return "Commercial_Whole.png";
+    }
+}
+
+/**
+ * Get the appropriate color for aircraft status in UI
+ * Returns RGB values as an array based on aircraft state/emergency
+ */
+int* Aircraft::getStatusColor() const 
+{
+    // Allocate a static array to avoid memory leaks
+    static int color[3];
+    
+    // Emergency aircraft are always red
+    if (EmergencyNo > 0) {
+        color[0] = 255; // R
+        color[1] = 0;   // G
+        color[2] = 0;   // B
+        return color;
+    }
+    
+    // Violation aircraft are yellow
+    if (HasViolation || hasActiveViolation) {
+        color[0] = 255; // R
+        color[1] = 255; // G
+        color[2] = 0;   // B
+        return color;
+    }
+    
+    // State-specific colors
+    switch (state) {
+        case FlightState::Landing:
+        case FlightState::Approach:
+            // Green for landing/approaching
+            color[0] = 0;   // R
+            color[1] = 255; // G
+            color[2] = 128; // B
+            break;
+        case FlightState::Taxi:
+        case FlightState::AtGate:
+            // Yellow for ground operations
+            color[0] = 255; // R
+            color[1] = 255; // G
+            color[2] = 0;   // B
+            break;
+        case FlightState::TakeoffRoll:
+        case FlightState::Climb:
+        case FlightState::Cruise:
+            // Blue for departing
+            color[0] = 0;   // R
+            color[1] = 191; // G
+            color[2] = 255; // B
+            break;
+        default:
+            // White for other states
+            color[0] = 255; // R
+            color[1] = 255; // G
+            color[2] = 255; // B
+    }
+    
+    return color;
+}
+
+/**
+ * Check if aircraft should be animated in the current frame
+ * Helps control animation timing for smooth SFML rendering
+ */
+bool Aircraft::shouldAnimate(float deltaTime) const 
+{
+    // This is just a simple implementation
+    // For more complex animations, you might use timer values
+    
+    // Ensure we have a positive delta time
+    if (deltaTime <= 0) return false;
+    
+    // Always animate emergency aircraft for visual emphasis
+    if (EmergencyNo > 0) return true;
+    
+    // Animate based on state - airborne planes animate more frequently
+    if (isinAir()) {
+        // Animate airborne aircraft every frame
+        return true;
+    } else {
+        // Animate ground aircraft less frequently
+        // This simply returns true approximately every 0.5 seconds
+        return (static_cast<int>(deltaTime * 2) % 2) == 0;
+    }
+}
+
+/**
+ * Get the priority display level (z-index equivalent)
+ * Higher values should be displayed on top of others
+ */
+int Aircraft::getDisplayPriority() const 
+{
+    // Emergency aircraft always on top
+    if (EmergencyNo > 0) return 100;
+    
+    // Violation aircraft next
+    if (HasViolation || hasActiveViolation) return 90;
+    
+    // Airborne aircraft next
+    if (isinAir()) return 80;
+    
+    // Active aircraft with runway assigned
+    if (isActive && hasRunwayAssigned) return 70;
+    
+    // Other active aircraft
+    if (isActive) return 60;
+    
+    // All other aircraft
+    return 50;
+}
+
+/**
+ * Get a string representation of aircraft type
+ * Useful for SFML text displays
+ */
+std::string Aircraft::getTypeString() const 
+{
+    switch (type) {
+        case AirCraftType::Commercial: return "Commercial";
+        case AirCraftType::Cargo: return "Cargo";
+        case AirCraftType::Military: return "Military";
+        case AirCraftType::Emergency: return "Emergency";
+        case AirCraftType::Medical: return "Medical";
+        default: return "Unknown";
     }
 }

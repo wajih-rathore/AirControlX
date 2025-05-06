@@ -51,6 +51,10 @@ public:
     void simulateViolation(const std::string& flightNumber, const std::string& airline, 
                           int speed, int minAllowed, int maxAllowed);
     
+    // Alias for simulateViolation to maintain compatibility with ATCScontroller
+    void reportViolation(const std::string& flightNumber, const std::string& airline, 
+                        int speed, int minAllowed, int maxAllowed);
+    
 private:
     int avnPipeWriteEnd; // File descriptor for pipe to AVN Generator process
     

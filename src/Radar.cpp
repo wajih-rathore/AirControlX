@@ -277,3 +277,14 @@ void Radar::simulateViolation(const std::string& flightNumber, const std::string
         std::cout << "Simulated violation data sent to AVN Generator process" << std::endl;
     }
 }
+
+// Alias for simulateViolation to maintain compatibility with ATCScontroller
+void Radar::reportViolation(const std::string& flightNumber, const std::string& airline, 
+                    int speed, int minAllowed, int maxAllowed)
+{
+    // Why have two methods that do the same thing? Well, sometimes code evolves and names change.
+    // This alias makes it easier to maintain backward compatibility without refactoring everywhere.
+    
+    // Just call the existing implementation
+    simulateViolation(flightNumber, airline, speed, minAllowed, maxAllowed);
+}

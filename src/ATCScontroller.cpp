@@ -4,6 +4,8 @@
 #include <ctime>
 #include <unistd.h> // For write()
 #include <string.h>
+#include <sstream>
+#include <algorithm>
 using namespace std;
 
 ATCScontroller::ATCScontroller()
@@ -297,10 +299,263 @@ FlightsScheduler* ATCScontroller::getScheduler()
     return &scheduler;
 }
 
+// Get a pointer to the flight scheduler (alias for getScheduler())
+FlightsScheduler* ATCScontroller::getFlightScheduler()
+{
+    // This is an alias for getScheduler() to maintain compatibility
+    return &scheduler;
+}
+
 // Test function to simulate a violation
 void ATCScontroller::simulateViolation(const std::string& flightNumber, const std::string& airline, 
                                       int speed, int minAllowed, int maxAllowed)
 {
-    // Delegate to the radar to simulate a violation
-    radar.simulateViolation(flightNumber, airline, speed, minAllowed, maxAllowed);
+    radar.reportViolation(flightNumber, airline, speed, minAllowed, maxAllowed);
+}
+
+// ======== SFML Visualization Helper Functions ========
+
+/**
+ * Get all active flights for visualization
+ * Returns a thread-safe copy of all active flights
+ */
+std::vector<Aircraft*> ATCScontroller::getAllActiveFlights() const
+{
+    // Lock for thread safety
+    std::lock_guard<std::mutex> lock(const_cast<ATCScontroller*>(this)->controllerMutex);
+    
+    // Get a copy of active flights from scheduler
+    // (This assumes scheduler already has thread safety internally)
+    return scheduler.getActiveFlights();
+}
+
+/**
+ * Get status text for visualization
+ * Returns formatted text about ATC status for the UI
+ */
+std::string ATCScontroller::getStatusText() const
+{
+    // Lock for thread safety
+    std::lock_guard<std::mutex> lock(const_cast<ATCScontroller*>(this)->controllerMutex);
+    
+    std::stringstream statusText;
+    
+    // Count aircraft in different states
+    int totalActive = scheduler.getActiveFlights().size();
+    int holding = 0;
+    int landing = 0;
+    int takeoff = 0;
+    int taxiing = 0;
+    
+    // Iterate through all active flights to count states
+    for (Aircraft* aircraft : scheduler.getActiveFlights())
+    {
+        switch (aircraft->state)
+        {
+            case FlightState::Holding:
+                holding++;
+                break;
+            case FlightState::Approach:
+            case FlightState::Landing:
+                landing++;
+                break;
+            case FlightState::TakeoffRoll:
+            case FlightState::Climb:
+                takeoff++;
+                break;
+            case FlightState::Taxi:
+                taxiing++;
+                break;
+            default:
+                break;
+        }
+    }
+    
+    // Format status text
+    statusText << "ATC Status: " << totalActive << " flights active" << std::endl;
+    statusText << "Holding: " << holding << " | Landing: " << landing << std::endl;
+    statusText << "Takeoff: " << takeoff << " | Taxiing: " << taxiing << std::endl;
+    
+    // Add violation count
+    int violations = getActiveViolationsCount();
+    if (violations > 0)
+    {
+        statusText << "VIOLATIONS: " << violations << std::endl;
+    }
+    
+    return statusText.str();
+}
+
+/**
+ * Get flight with highest priority
+ * Returns the flight currently with highest priority in the scheduling system
+ */
+Aircraft* ATCScontroller::getHighestPriorityFlight() const
+{
+    // Lock for thread safety
+    std::lock_guard<std::mutex> lock(const_cast<ATCScontroller*>(this)->controllerMutex);
+    
+    // First check for any emergency flight
+    Aircraft* emergencyFlight = scheduler.getNextEmergency();
+    if (emergencyFlight)
+    {
+        return emergencyFlight;
+    }
+    
+    // Check arrival queue - don't actually remove from queue, just peek
+    if (!scheduler.arrivalQueue.empty())
+    {
+        // Use a copy of the queue to avoid messing with the real one
+        std::vector<Aircraft*> arrivalCopy = scheduler.arrivalQueue;
+        
+        // Sort by priority
+        std::sort(arrivalCopy.begin(), arrivalCopy.end(), 
+            [](Aircraft* a, Aircraft* b) {
+                return a->calculatePriorityScore() > b->calculatePriorityScore();
+            });
+        
+        // Return highest priority arrival
+        return arrivalCopy.front();
+    }
+    
+    // Check departure queue - don't actually remove from queue, just peek
+    if (!scheduler.departureQueue.empty())
+    {
+        // Use a copy of the queue to avoid messing with the real one
+        std::vector<Aircraft*> departureCopy = scheduler.departureQueue;
+        
+        // Sort by priority
+        std::sort(departureCopy.begin(), departureCopy.end(), 
+            [](Aircraft* a, Aircraft* b) {
+                return a->calculatePriorityScore() > b->calculatePriorityScore();
+            });
+        
+        // Return highest priority departure
+        return departureCopy.front();
+    }
+    
+    // No flights in queue
+    return nullptr;
+}
+
+/**
+ * Get flights with specific state
+ * Returns all flights currently in the specified flight state
+ */
+std::vector<Aircraft*> ATCScontroller::getFlightsByState(FlightState state) const
+{
+    // Lock for thread safety
+    std::lock_guard<std::mutex> lock(const_cast<ATCScontroller*>(this)->controllerMutex);
+    
+    std::vector<Aircraft*> matchingFlights;
+    
+    // Iterate through all active flights to find matching state
+    for (Aircraft* aircraft : scheduler.getActiveFlights())
+    {
+        if (aircraft->state == state)
+        {
+            matchingFlights.push_back(aircraft);
+        }
+    }
+    
+    return matchingFlights;
+}
+
+/**
+ * Get flights by emergency level
+ * Returns all flights with the specified emergency level
+ */
+std::vector<Aircraft*> ATCScontroller::getFlightsByEmergencyLevel(int emergencyLevel) const
+{
+    // Lock for thread safety
+    std::lock_guard<std::mutex> lock(const_cast<ATCScontroller*>(this)->controllerMutex);
+    
+    std::vector<Aircraft*> matchingFlights;
+    
+    // Iterate through all active flights to find matching emergency level
+    for (Aircraft* aircraft : scheduler.getActiveFlights())
+    {
+        if (aircraft->EmergencyNo == emergencyLevel)
+        {
+            matchingFlights.push_back(aircraft);
+        }
+    }
+    
+    return matchingFlights;
+}
+
+/**
+ * Get flights waiting for runway
+ * Returns all flights waiting for runway assignment
+ */
+std::vector<Aircraft*> ATCScontroller::getFlightsWaitingForRunway() const
+{
+    // Lock for thread safety
+    std::lock_guard<std::mutex> lock(const_cast<ATCScontroller*>(this)->controllerMutex);
+    
+    std::vector<Aircraft*> waitingFlights;
+    
+    // Check arrivals queue
+    for (Aircraft* aircraft : scheduler.arrivalQueue)
+    {
+        if (!aircraft->hasRunwayAssigned)
+        {
+            waitingFlights.push_back(aircraft);
+        }
+    }
+    
+    // Check departures queue
+    for (Aircraft* aircraft : scheduler.departureQueue)
+    {
+        if (!aircraft->hasRunwayAssigned)
+        {
+            waitingFlights.push_back(aircraft);
+        }
+    }
+    
+    return waitingFlights;
+}
+
+/**
+ * Get flight counts by type
+ * Returns array with counts of each aircraft type [commercial, cargo, military, emergency, medical]
+ */
+int* ATCScontroller::getFlightCountsByType() const
+{
+    // Lock for thread safety
+    std::lock_guard<std::mutex> lock(const_cast<ATCScontroller*>(this)->controllerMutex);
+    
+    // Static array to avoid memory leaks when returning pointer
+    static int counts[5] = {0, 0, 0, 0, 0};
+    
+    // Reset counts
+    for (int i = 0; i < 5; i++)
+    {
+        counts[i] = 0;
+    }
+    
+    // Count aircraft types
+    for (Aircraft* aircraft : scheduler.getActiveFlights())
+    {
+        switch (aircraft->type)
+        {
+            case AirCraftType::Commercial:
+                counts[0]++;
+                break;
+            case AirCraftType::Cargo:
+                counts[1]++;
+                break;
+            case AirCraftType::Military:
+                counts[2]++;
+                break;
+            case AirCraftType::Emergency:
+                counts[3]++;
+                break;
+            case AirCraftType::Medical:
+                counts[4]++;
+                break;
+        }
+    }
+    
+    return counts;
 }

@@ -118,3 +118,118 @@ RunwayClass* RunwayManager::getRunway(const std::string& runwayId)
     // This will trigger the safety checks in assignRunway()
     return nullptr;
 }
+
+// ======== SFML Visualization Abstraction Functions ========
+
+/**
+ * Get all available runways
+ * Returns vector of pointers to available runways for visualization
+ */
+std::vector<RunwayClass*> RunwayManager::getAvailableRunways() const
+{
+    // This function helps SFML visualizer quickly access available runways
+    std::vector<RunwayClass*> availableRunways;
+    
+    for (size_t i = 0; i < runways.size(); i++)
+    {
+        // If the runway is not occupied, add a pointer to it in our result vector
+        if (!runways[i].isOccupied)
+        {
+            // The const_cast is safe here because we're not modifying the runway
+            // It's just needed because the function is const but returns non-const pointers
+            availableRunways.push_back(const_cast<RunwayClass*>(&runways[i]));
+        }
+    }
+    
+    return availableRunways;
+}
+
+/**
+ * Get all occupied runways
+ * Returns vector of pointers to occupied runways for visualization
+ */
+std::vector<RunwayClass*> RunwayManager::getOccupiedRunways() const
+{
+    // Similar to getAvailableRunways, but for occupied ones
+    std::vector<RunwayClass*> occupiedRunways;
+    
+    for (size_t i = 0; i < runways.size(); i++)
+    {
+        // If the runway is occupied, add a pointer to it in our result vector
+        if (runways[i].isOccupied)
+        {
+            // Same const_cast reasoning as above
+            occupiedRunways.push_back(const_cast<RunwayClass*>(&runways[i]));
+        }
+    }
+    
+    return occupiedRunways;
+}
+
+/**
+ * Get runway usage statistics for visualization
+ * Returns array of [total, available, occupied] counts
+ */
+int* RunwayManager::getRunwayStatistics() const
+{
+    // This is a handy helper for UI components that need runway stats
+    // Using static array to avoid memory leaks since we're returning a pointer
+    static int stats[3];
+    
+    // Count occupied runways
+    int occupied = 0;
+    for (const auto& runway : runways)
+    {
+        if (runway.isOccupied) occupied++;
+    }
+    
+    // Fill our statistics array
+    stats[0] = static_cast<int>(runways.size());  // Total runways
+    stats[1] = static_cast<int>(runways.size()) - occupied;  // Available runways
+    stats[2] = occupied;  // Occupied runways
+    
+    return stats;
+}
+
+/**
+ * Get runway availability as percentage
+ * Returns percentage of available runways (0-100)
+ */
+float RunwayManager::getAvailabilityPercentage() const
+{
+    // Avoid division by zero if there are no runways
+    if (runways.empty()) return 0.0f;
+    
+    // Count available runways
+    int available = 0;
+    for (const auto& runway : runways)
+    {
+        if (!runway.isOccupied) available++;
+    }
+    
+    // Calculate and return percentage
+    return (static_cast<float>(available) / static_cast<float>(runways.size())) * 100.0f;
+}
+
+/**
+ * Get status text for SFML display
+ * Returns formatted text summary of runway statuses
+ */
+std::string RunwayManager::getStatusSummary() const
+{
+    // Create a concise summary for SFML status display
+    std::stringstream summary;
+    
+    // Add header
+    summary << "Runway Status: ";
+    
+    // Calculate statistics
+    int* stats = getRunwayStatistics();
+    
+    // Add percentage and counts
+    float availPercent = getAvailabilityPercentage();
+    summary << static_cast<int>(availPercent) << "% Available (";
+    summary << stats[1] << "/" << stats[0] << ")";
+    
+    return summary.str();
+}

@@ -37,6 +37,38 @@ public:
     
     // Get a runway by its ID
     RunwayClass* getRunway(const std::string& runwayId);
+    
+    // ======== SFML Visualization Abstraction Functions ========
+    
+    /**
+     * Get all available runways
+     * Returns vector of pointers to available runways for visualization
+     */
+    std::vector<RunwayClass*> getAvailableRunways() const;
+    
+    /**
+     * Get all occupied runways
+     * Returns vector of pointers to occupied runways for visualization
+     */
+    std::vector<RunwayClass*> getOccupiedRunways() const;
+    
+    /**
+     * Get runway usage statistics for visualization
+     * Returns array of [total, available, occupied] counts
+     */
+    int* getRunwayStatistics() const;
+    
+    /**
+     * Get runway availability as percentage
+     * Returns percentage of available runways (0-100)
+     */
+    float getAvailabilityPercentage() const;
+    
+    /**
+     * Get status text for SFML display
+     * Returns formatted text summary of runway statuses
+     */
+    std::string getStatusSummary() const;
 };
 
 #endif // AIRCONTROLX_RUNWAYMANAGER_H

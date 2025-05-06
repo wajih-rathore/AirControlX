@@ -47,14 +47,14 @@ public:
     void checkForEmergency();
     
     // Check if aircraft is airborne
-    bool isinAir();
+    bool isinAir() const;
     
     int calculatePriorityScore() const;
- // Check if aircraft is on the ground
-    bool isOnGround();
+    // Check if aircraft is on the ground
+    bool isOnGround() const;
     
     // Check if aircraft is ready for takeoff
-    bool isReadyForTakeOff();
+    bool isReadyForTakeOff() const;
     
     // Request runway assignment
     void RequestRunawayAssignment();
@@ -70,6 +70,56 @@ public:
     
     // Get current state name as string (for UI display)
     std::string getStateName() const;
+
+    // ======== SFML Visualization Abstraction Functions ========
+    
+    /**
+     * Get aircraft display name for SFML UI
+     * Returns a formatted string with flight number and current state
+     */
+    std::string getDisplayName() const;
+    
+    /**
+     * Get aircraft status for SFML rendering
+     * Returns a formatted status string with additional information
+     */
+    std::string getStatusText() const;
+    
+    /**
+     * Get appropriate rotation angle for aircraft sprite
+     * Maps the aircraft direction to degrees for SFML sprite rotation
+     */
+    float getRotationAngle() const;
+    
+    /**
+     * Get appropriate asset name for aircraft based on type
+     * Returns the appropriate texture filename to use for this aircraft
+     */
+    std::string getAssetName() const;
+    
+    /**
+     * Get the appropriate color for aircraft status in UI
+     * Returns RGB values as an array based on aircraft state/emergency
+     */
+    int* getStatusColor() const;
+    
+    /**
+     * Check if aircraft should be animated in the current frame
+     * Helps control animation timing for smooth SFML rendering
+     */
+    bool shouldAnimate(float deltaTime) const;
+    
+    /**
+     * Get the priority display level (z-index equivalent)
+     * Higher values should be displayed on top of others
+     */
+    int getDisplayPriority() const;
+    
+    /**
+     * Get a string representation of aircraft type
+     * Useful for SFML text displays
+     */
+    std::string getTypeString() const;
 };
 
 #endif // AIRCONTROLX_AIRCRAFT_H

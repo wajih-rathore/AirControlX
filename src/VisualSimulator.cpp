@@ -66,7 +66,7 @@ bool VisualSimulator::loadGraphics()
     welcomeText.setFillColor(sf::Color::White);
     welcomeText.setOutlineColor(sf::Color(0, 0, 0, 160));
     welcomeText.setOutlineThickness(0.5f);
-    welcomeText.setPosition(10.0f, 10.0f);
+    welcomeText.setPosition(660.0f, 10.0f);
 
     // Load cabin texture
     if (!cabinTexture.loadFromFile("assets/Cabin.png"))
@@ -177,9 +177,7 @@ void VisualSimulator::display()
     window.draw(runwayBSprite);
     window.draw(runwayCSprite);
 
-    // Draw the welcome text
-    window.draw(welcomeText);
-
+    
     //Check which runway is occupied and draw the aircraft on it
     if (runwayOccupied[0]) {
         window.draw(aircraftSpriteRunway[0]);
@@ -192,7 +190,9 @@ void VisualSimulator::display()
     }
     // Draw the cabin sprite
     window.draw(cabinSprite);
-
+    
+    // Draw the welcome text
+    window.draw(welcomeText);
     // Display everything we just drew (swap buffers)
     window.display();
 }
@@ -380,8 +380,6 @@ void VisualSimulator::animateLanding(int runwayIndex, int planeType, std::string
     // Restart the animation clock for this runway
     animationClockRunways[runwayIndex].restart();
 
-    std::cout << "Landing animation initialized for runway " << runwayIndex
-              << " with plane type: " << PlaneType << " and direction: " << direction << std::endl;
 }void animateDeparture(int runwayIndex, int planeType, std::string PlaneType, int direction){}
 
 void VisualSimulator::animateDeparture(int runwayIndex, int planeType, std::string PlaneType, int direction) {
@@ -439,8 +437,6 @@ void VisualSimulator::animateDeparture(int runwayIndex, int planeType, std::stri
     // Restart the animation clock for this runway
     animationClockRunways[runwayIndex].restart();
 
-    std::cout << "Departure animation initialized for runway " << runwayIndex
-              << " with plane type: " << PlaneType << " and direction: " << direction << std::endl;
 }
 
 void VisualSimulator::updateRunway_1_AircraftsPosition() {
@@ -474,8 +470,7 @@ void VisualSimulator::updateRunway_1_AircraftsPosition() {
         position[runwayIndex][0] += 4; // Taxi
     } else {
         runwayOccupied[runwayIndex] = false;
-        std::cout << "Aircraft of type " << aircraftType[runwayIndex]
-                  << " has arrived at the gate on Runway 1." << std::endl;
+
         return;
     }
 
@@ -520,7 +515,6 @@ void VisualSimulator::updateRunway_2_AircraftsPosition() {
     } else {
         // Departure complete
         runwayOccupied[runwayIndex] = false; // Mark the runway as free
-        std::cout << "Aircraft of type " << aircraftType[runwayIndex] << " has departed from Runway 2." << std::endl;
     }
     aircraftSpriteRunway[runwayIndex].setPosition(position[runwayIndex][0], position[runwayIndex][1]);
 }
@@ -539,7 +533,7 @@ void VisualSimulator::updateRunway_3_AircraftsPosition() {
         // Movement phases
         if (elapsedTime <= 3.0f) {
             position[runwayIndex][0] += 3; // Approach
-            if(position[runwayIndex][1] < 115)
+            if(position[runwayIndex][1] < 550)
                 position[runwayIndex][1] += 1; // Simulate Downward movement 
         } else if (elapsedTime <= 5.0f) {
             if(aircraftSpriteRunway[runwayIndex].getRotation() > 0)
@@ -552,8 +546,6 @@ void VisualSimulator::updateRunway_3_AircraftsPosition() {
             position[runwayIndex][0] += 4; // Taxi
         } else {
             runwayOccupied[runwayIndex] = false;
-            std::cout << "Aircraft of type " << aircraftType[runwayIndex]
-                    << " has arrived at the gate on Runway 1." << std::endl;
             return;
         }
     } else if (runway3status == -1) {
@@ -583,7 +575,6 @@ void VisualSimulator::updateRunway_3_AircraftsPosition() {
         } else {
             // Departure complete
             runwayOccupied[runwayIndex] = false; // Mark the runway as free
-            std::cout << "Aircraft of type " << aircraftType[runwayIndex] << " has departed from Runway 2." << std::endl;
         }
     }
     aircraftSpriteRunway[runwayIndex].setPosition(position[runwayIndex][0], position[runwayIndex][1]);
@@ -598,12 +589,13 @@ void VisualSimulator::checkForArrivalsOrDepartures() {
             // Check if the aircraft has been assigned a runway and is active
             if (aircraft.hasRunwayAssigned && aircraft.isActive) {
                 int runwayIndex = aircraft.assignedRunwayIndex;
-                if(aircraft.direction == Direction::North || aircraft.direction == Direction::South) {
+        
+                if(aircraft.type == AirCraftType::Emergency  || aircraft.type == AirCraftType::Cargo) {
+                     runwayIndex = 2; // Emergency aircraft use Runway 3
+                } else if(aircraft.direction == Direction::North || aircraft.direction == Direction::South) {
                     runwayIndex = 0; // North/South aircraft use Runway 1
                 } else if (aircraft.direction == Direction::East || aircraft.direction == Direction::West) {
                     runwayIndex = 1; // East/West aircraft use Runway 2
-                } else {
-                    runwayIndex = 2; // Emergency aircraft use Runway 3
                 }
 
                 // Ensure the runway index is valid

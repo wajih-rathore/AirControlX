@@ -124,6 +124,22 @@ void Aircraft::checkForEmergency() {
     }
 }
 
+void Aircraft::cleanAircraft(){
+    // Reset aircraft state and properties
+    state = FlightState::Holding;
+    speed = 0;
+    EmergencyNo = 0;
+    HasViolation = false;
+    isFaulty = false;
+    isActive = false;
+    x_position = -1;
+    y_position = -1;
+    queueEntryTime = 0;
+    hasRunwayAssigned = false;
+    assignedRunwayIndex = 0; // No runway assigned initially
+}
+
+
 // Check if aircraft is in an airborne state
 bool Aircraft::isinAir() const {
     return (state == FlightState::Holding || state == FlightState::Approach || 

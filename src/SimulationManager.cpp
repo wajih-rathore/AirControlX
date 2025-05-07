@@ -48,6 +48,15 @@ SimulationManager::~SimulationManager()
  */
 void* SimulationManager::flightThreadFunction(void* arg) 
 {
+    
+    int currentFlightCount = 0;
+    while(currentFlightCount < 10) 
+    {
+       
+        
+        int FlightStartTime = rand() % 50;
+    sleep(FlightStartTime);  // Simulate random delay before flight starts
+
     // Cast the argument back to ThreadArgs
     ThreadArgs* args = static_cast<ThreadArgs*>(arg);
     Aircraft* plane = args->aircraft;
@@ -55,6 +64,12 @@ void* SimulationManager::flightThreadFunction(void* arg)
     ATCScontroller* atcController = args->atc;
     RunwayManager* runwayManager = args->runways;
     
+        if(currentFlightCount > 0) 
+        {
+            plane->cleanAircraft();  // Clean up the aircraft for reuse
+        }
+
+
     // Mark the plane as active
     plane->isActive = true;
     
@@ -82,7 +97,7 @@ void* SimulationManager::flightThreadFunction(void* arg)
         
         // Simulate the arrival sequence
         int waitTime = 0;
-        while (!plane->hasRunwayAssigned && waitTime < 30) 
+        while (!plane->hasRunwayAssigned && waitTime < 300) 
         {
             sleep(1);  // Check every second if runway assigned
             waitTime++;
@@ -235,11 +250,9 @@ void* SimulationManager::flightThreadFunction(void* arg)
     manager->logMessage("Flight " + plane->FlightNumber + 
                        " has completed its journey");
     
-    // Clean up the args we allocated
-    delete args;
-    
-    // Exit thread
-    pthread_exit(nullptr);
+    }
+                       // Exit thread
+                       pthread_exit(nullptr);
 }
 
 /**

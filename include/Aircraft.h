@@ -35,6 +35,8 @@ public:
     // Destructor
     ~Aircraft();
     
+    void cleanAircraft();
+
     // Simulate one step of aircraft movement
     void SimulateStep();
     

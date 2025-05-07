@@ -9,6 +9,8 @@
 #include <string.h>
 #include <errno.h>
 #include <limits>
+#include <SFML/Graphics.hpp>
+
 
 // Constructor initializes default values
 AirlinePortal::AirlinePortal()
@@ -85,6 +87,27 @@ void AirlinePortal::run()
     // Set the running flag
     running.store(true);
     
+
+     //Create a sfml 1200 * 600 window "AVN GENERATOR"
+     sf::RenderWindow window(sf::VideoMode(1200, 600), "Airline Portal");
+     window.setVerticalSyncEnabled(true);  // Enable V-Sync to prevent screen tearing
+     
+     sf::Font font;
+     font.loadFromFile("assets/arial.ttf");
+     sf::Text text;
+     text.setFont(font);
+     text.setString("Airline Portal");
+     text.setCharacterSize(50);
+     text.setFillColor(sf::Color::Black);
+        text.setPosition(400, 250); // Center the text in the window
+    //Set BackGround console color to white
+
+    window.clear(sf::Color::White); // Clear the window with white color
+
+    window.draw(text); // Draw the text
+
+     window.display(); // Display the window
+
     std::cout << "AirlinePortal: Starting main process loop..." << std::endl;
     std::cout << "=== Welcome to the Airline Portal ===" << std::endl;
     std::cout << "Monitoring for incoming AVNs..." << std::endl;
@@ -154,76 +177,94 @@ void AirlinePortal::run()
                 std::cerr << "AirlinePortal: read() error: " << strerror(errno) << std::endl;
             }
         }
-        
-        // Check for user input
-        if (std::cin.rdbuf()->in_avail() > 0) // If there's user input available
+         // Create an event object to store the polled event
+    sf::Event event;
+    
+    // Process all pending events
+    while (window.pollEvent(event))
+    {
+        // Check if the user pressed the window's close button
+        if (event.type == sf::Event::Closed)
         {
-            int choice;
-            std::cin >> choice;
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Clear input buffer
-            
-            switch (choice)
-            {
-                case 1:
-                    viewAllAVNs();
-                    break;
-                case 2:
-                {
-                    std::string airline;
-                    std::cout << "Enter airline name (PIA, AirBlue, FedEx, PakistanAirforce, BlueDart, AghaKhanAir): ";
-                    std::getline(std::cin, airline);
-                    viewAVNsByAirline(airline);
-                    break;
-                }
-                case 3:
-                    viewAVNsByStatus(false); // View unpaid
-                    break;
-                case 4:
-                    viewAVNsByStatus(true); // View paid
-                    break;
-                case 5:
-                {
-                    std::string avnID;
-                    std::cout << "Enter AVN ID to pay: ";
-                    std::getline(std::cin, avnID);
-                    processUserPayment(avnID);
-                    break;
-                }
-                case 6:
-                    viewAllAirlineBalances();
-                    break;
-                case 7:
-                {
-                    std::string airline;
-                    std::cout << "Enter airline name: ";
-                    std::getline(std::cin, airline);
-                    viewAirlineBalance(airline);
-                    break;
-                }
-                case 8:
-                {
-                    std::string airline;
-                    int amount;
-                    std::cout << "Enter airline name: ";
-                    std::getline(std::cin, airline);
-                    std::cout << "Enter deposit amount (PKR): ";
-                    std::cin >> amount;
-                    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-                    depositFunds(airline, amount);
-                    break;
-                }
-                case 0:
-                    stop();
-                    break;
-                default:
-                    std::cout << "Invalid option. Try again." << std::endl;
-            }
-            
-            // Show the menu again after processing user input
-            std::cout << "\nPress Enter to return to the menu...";
-            std::cin.get(); // Wait for user to press Enter
-            showMenu();
+            window.close();
         }
+        
+        // Check if the user pressed the Escape key
+        if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape)
+        {
+            // Humorously log that the user is trying to escape from ATC duty!
+            std::cout << "Escape detected! Air Line Portal Exiting!" << std::endl;
+            window.close();
+        }
+        if(event.type == sf::Event::KeyPressed )
+        {
+                
+                switch (event.key.code)
+                {
+                    case sf::Keyboard::Num1:
+                        viewAllAVNs();
+                        break;
+                    case sf::Keyboard::Num2:
+                    {
+                        std::string airline;
+                        std::cout << "Enter airline name (PIA, AirBlue, FedEx, PakistanAirforce, BlueDart, AghaKhanAir): ";
+                        std::getline(std::cin, airline);
+                        viewAVNsByAirline(airline);
+                        break;
+                    }
+                    case sf::Keyboard::Num3:
+                        viewAVNsByStatus(false); // View unpaid
+                        break;
+                    case sf::Keyboard::Num4:
+                        viewAVNsByStatus(true); // View paid
+                        break;
+                    case sf::Keyboard::Num5:
+                    {
+                        std::string avnID;
+                        std::cout << "Enter AVN ID to pay: ";
+                        std::getline(std::cin, avnID);
+                        processUserPayment(avnID);
+                        break;
+                    }
+                    case sf::Keyboard::Num6:
+                        viewAllAirlineBalances();
+                        break;
+                    case sf::Keyboard::Num7:
+                    {
+                        std::string airline;
+                        std::cout << "Enter airline name: ";
+                        std::getline(std::cin, airline);
+                        viewAirlineBalance(airline);
+                        break;
+                    }
+                    case sf::Keyboard::Num8:
+                    {
+                        std::string airline;
+                        int amount;
+                        std::cout << "Enter airline name: ";
+                        std::getline(std::cin, airline);
+                        std::cout << "Enter deposit amount (PKR): ";
+                        std::cin >> amount;
+                        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                        depositFunds(airline, amount);
+                        break;
+                    }
+                    case 0:
+                        stop();
+                        break;
+                    default:
+                        std::cout << "Invalid option. Try again." << std::endl;
+                }
+                
+                // Show the menu again after processing user input
+                std::cout << "\nPress Enter to return to the menu...";
+                std::cin.get(); // Wait for user to press Enter
+                showMenu();
+            
+            window.close();
+        }
+       
+    }
     }
     
     std::cout << "AirlinePortal: Exiting main process loop" << std::endl;

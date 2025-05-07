@@ -34,10 +34,10 @@ public:
     
     // Monitor all active flights for violations
     // Returns vector of aircraft pointers that have violations with their allowed speed ranges
-    std::vector<ViolationInfo> detectViolations(const std::vector<Aircraft*>& aircraft);
+    std::vector<ViolationInfo> detectViolations(const std::vector<Aircraft>& aircraft);
     
     // Handle violations by sending them to the AVN Generator
-    void handleViolations(const std::vector<Aircraft*>& activeFlights);
+    void handleViolations(const std::vector<Aircraft>& activeFlights);
     
     // Get speed limits for a given flight state
     // Returns min and max allowed speed as a pair

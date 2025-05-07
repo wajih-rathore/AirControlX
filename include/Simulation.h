@@ -16,6 +16,7 @@
 #include "ATCScontroller.h"
 #include "VisualSimulator.h"
 #include "Timer.h"
+#include "Radar.h"
 
 /**
  * The Simulation class acts as the main coordinator for the AirControlX system.
@@ -31,7 +32,7 @@ private:
     ATCScontroller* atcController;
     VisualSimulator* visualizer;  // SFML visualization component
     Timer timer;             // Timer for simulation duration
-    
+    Radar radar;             // Radar for monitoring aircraft speed and violations
     // Simulation parameters
     int simulationDuration; // in seconds
     bool isRunning;

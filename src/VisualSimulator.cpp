@@ -224,14 +224,7 @@ void VisualSimulator::handleEvents()
             window.close();
             isRunning = false;
         }
-        //If Mouse Key Pressed Print the coordinates
-        if (event.type == sf::Event::MouseButtonPressed)
-        {
-            if (event.mouseButton.button == sf::Mouse::Left)
-            {
-                std::cout << "Mouse clicked at: (" << event.mouseButton.x << ", " << event.mouseButton.y << ")" << std::endl;
-            }
-        }
+       
     }
 }
 

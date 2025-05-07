@@ -47,32 +47,32 @@ int Radar::monitorAirCraft(Aircraft& plane)
 }
 
 // Monitor a collection of aircraft for violations
-std::vector<Radar::ViolationInfo> Radar::detectViolations(const std::vector<Aircraft*>& aircraft) 
+std::vector<Radar::ViolationInfo> Radar::detectViolations(const std::vector<Aircraft>& aircraft) 
 {
     // This vector will hold all aircraft with violations
     // along with their allowed speed limits
     std::vector<ViolationInfo> violations;
     
     // Loop through all active flights and check for speed violations
-    for (Aircraft* plane : aircraft)
+    for (Aircraft plane : aircraft)
     {
         // Skip aircraft that already have active violations
-        if (plane->hasActiveViolation)
+        if (plane.hasActiveViolation)
         {
             continue;
         }
         
         // Get the speed limits for this aircraft's state
-        auto limits = getSpeedLimits(plane->state);
+        auto limits = getSpeedLimits(plane.state);
         int minAllowed = limits.first;
         int maxAllowed = limits.second;
         
         // Check if there's a violation
-        if (checkSpeedViolation(*plane, minAllowed, maxAllowed))
+        if (checkSpeedViolation(*&plane, minAllowed, maxAllowed))
         {
             // Add this aircraft to our violations list
             ViolationInfo info;
-            info.aircraft = plane;
+            info.aircraft = &plane;
             info.minAllowed = minAllowed;
             info.maxAllowed = maxAllowed;
             violations.push_back(info);
@@ -130,7 +130,7 @@ void Radar::processViolation(Aircraft* aircraft, int minAllowed, int maxAllowed)
 }
 
 // Handle violations by sending them to the AVN Generator
-void Radar::handleViolations(const std::vector<Aircraft*>& activeFlights)
+void Radar::handleViolations(const std::vector<Aircraft>& activeFlights)
 {
     // This function detects aircraft speed violations and sends them to the AVN Generator process
     

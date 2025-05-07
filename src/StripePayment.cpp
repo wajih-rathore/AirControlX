@@ -11,7 +11,7 @@
 #include <sstream>
 #include <limits>
 #include <chrono>
-
+#include <SFML/Graphics.hpp>
 // Constructor initializes default values
 StripePayment::StripePayment()
 {
@@ -119,7 +119,23 @@ void StripePayment::run()
 {
     // Set the running flag
     running.store(true);
+    //Create a sfml 1200 * 600 window "AVN GENERATOR"
+     sf::RenderWindow window(sf::VideoMode(1200, 600), "stripe pay");
+     window.setVerticalSyncEnabled(true);  // Enable V-Sync to prevent screen tearing
+     
+     sf::Font font;
+     font.loadFromFile("assets/arial.ttf");
+     sf::Text text;
+     text.setFont(font);
+     text.setString("Payment Portal");
+     text.setCharacterSize(50);
+     text.setFillColor(sf::Color::Black);
+        text.setPosition(400, 250); // Center the text in the window
     
+        window.clear(sf::Color::White); // Clear the window with white color
+    window.draw(text); // Draw the text
+    window.display(); // Display the text on the window
+
     std::cout << "StripePay: Starting main process loop..." << std::endl;
     std::cout << "=== Welcome to the StripePay Service ===" << std::endl;
     std::cout << "Monitoring for incoming payment requests..." << std::endl;
@@ -189,20 +205,32 @@ void StripePayment::run()
                 std::cerr << "StripePay: read() error: " << strerror(errno) << std::endl;
             }
         }
-        
-        // Check for user input
-        if (std::cin.rdbuf()->in_avail() > 0) // If there's user input available
+    sf::Event event;
+         // Process all pending events
+    while (window.pollEvent(event))
+    {
+        // Check if the user pressed the window's close button
+        if (event.type == sf::Event::Closed)
         {
-            int choice;
-            std::cin >> choice;
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Clear input buffer
-            
-            switch (choice)
+            window.close();
+        }
+        
+        // Check if the user pressed the Escape key
+        if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape)
+        {
+            // Humorously log that the user is trying to escape from ATC duty!
+            std::cout << "Escape detected! Air Line Portal Exiting!" << std::endl;
+            window.close();
+        }
+        if(event.type == sf::Event::KeyPressed )
+        {
+
+            switch (event.key.code)
             {
-                case 1:
+                case sf::Keyboard::Num1:
                     displayPendingPayments();
                     break;
-                case 2:
+                case sf::Keyboard::Num2:
                 {
                     int index;
                     std::cout << "Enter payment index to approve: ";
@@ -211,7 +239,7 @@ void StripePayment::run()
                     approvePayment(index);
                     break;
                 }
-                case 3:
+                case sf::Keyboard::Num3:
                     viewPaymentHistory();
                     break;
                 case 0:
@@ -226,6 +254,7 @@ void StripePayment::run()
             std::cin.get(); // Wait for user to press Enter
             showMenu();
         }
+    }
     }
     
     std::cout << "StripePay: Exiting main process loop" << std::endl;

@@ -106,6 +106,8 @@ bool Simulation::run()
         
         std::cout << "All aircraft launched, simulation running..." << std::endl;
         
+        sf::Clock radarclock;
+
         // Main SFML rendering loop
         while (visualizer->running() && !timer.isTimeUp()) {
             // Update simulation time in the manager
@@ -113,7 +115,15 @@ bool Simulation::run()
             
             // Handle window events (close, keyboard input)
             visualizer->handleEvents();
-            
+
+            if(radarclock.getElapsedTime().asSeconds() > 0.5f) {
+                radarclock.restart();
+                // Update radar data
+                for(auto airline : airlineManager->getAllAirlines()) {
+                    radar.detectViolations(airline->aircrafts);
+                  
+            }
+        }
             // Update simulation state if not paused
             if (!isPaused) {
                 update();

@@ -92,6 +92,11 @@ bool AVNGenerator::initialize(int atcsToAvn[2], int avnToAirline[2], int stripeT
     std::cout << "  ATCS -> AVN read: " << atcsToAvnPipe[0] << std::endl;
     std::cout << "  AVN -> Airline write: " << avnToAirlinePipe[1] << std::endl;
     std::cout << "  StripePay -> AVN read: " << stripeToAvnPipe[0] << std::endl;
+
+    //Displays Text Avn Generator on in Centre
+
+
+    // Set the initial state of the AVN Generator
     
     return true;
 }
@@ -108,6 +113,22 @@ bool AVNGenerator::initialize(int atcsToAvn[2], int avnToAirline[2], int stripeT
  */
 void AVNGenerator::run() 
 {
+     //Create a sfml 1200 * 600 window "AVN GENERATOR"
+     sf::RenderWindow window(sf::VideoMode(1200, 600), "AVN GENERATOR");
+     window.setVerticalSyncEnabled(true);  // Enable V-Sync to prevent screen tearing
+     
+     sf::Font font;
+     font.loadFromFile("assets/arial.ttf");
+     sf::Text text;
+     text.setFont(font);
+     text.setString("AVN GENERATOR");
+     text.setCharacterSize(50);
+     text.setFillColor(sf::Color::White);
+        text.setPosition(400, 250); // Center the text in the window
+
+    window.draw(text); // Draw the text
+
+     window.display(); // Display the window
     std::cout << "AVN Generator process running (PID: " << getpid() << ")" << std::endl;
     
     // File descriptor set for select()
@@ -124,8 +145,27 @@ void AVNGenerator::run()
     PaymentData paymentData;
     
     // Main process loop
-    while (running.load()) 
+    while ( running.load()) 
     {
+        sf::Event event;
+    
+        // Process all pending events
+        while (window.pollEvent(event))
+        {
+            // Check if the user pressed the window's close button
+            if (event.type == sf::Event::Closed)
+            {
+                window.close();
+            }
+            
+            // Check if the user pressed the Escape key
+            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape)
+            {
+                // Humorously log that the user is trying to escape from ATC duty!
+                std::cout << "Escape detected! Air Line Portal Exiting!" << std::endl;
+                window.close();
+            }
+        }
         // Reset file descriptor set for each iteration
         FD_ZERO(&readFds);
         FD_SET(atcsToAvnPipe[0], &readFds);

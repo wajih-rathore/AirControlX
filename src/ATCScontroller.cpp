@@ -274,7 +274,13 @@ void ATCScontroller::handleViolations()
 {
     // Delegate to the radar system to handle violations
     const std::vector<Aircraft*>& activeFlights = scheduler.getActiveFlights();
-    radar.handleViolations(activeFlights);
+    //Create a new vector that stores the object rather than a reference
+    std::vector<Aircraft> activeFlightsCopy;
+    for (const Aircraft* aircraft : activeFlights)
+    {
+        activeFlightsCopy.push_back(*aircraft);
+    }
+    radar.handleViolations(activeFlightsCopy);
 }
 
 // Add an arrival flight to be scheduled

@@ -7,6 +7,8 @@
 #include <unistd.h>
 #include <atomic>
 #include "AVN.h"
+#include <SFML/Graphics.hpp>
+
 
 /**
  * This struct defines the data format for violation information 

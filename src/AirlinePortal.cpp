@@ -89,7 +89,7 @@ void AirlinePortal::run()
     
 
      //Create a sfml 1200 * 600 window "AVN GENERATOR"
-     sf::RenderWindow window(sf::VideoMode(1200, 600), "Airline Portal");
+     sf::RenderWindow window(sf::VideoMode(400, 200), "Airline Portal");
      window.setVerticalSyncEnabled(true);  // Enable V-Sync to prevent screen tearing
      
      sf::Font font;
@@ -97,9 +97,9 @@ void AirlinePortal::run()
      sf::Text text;
      text.setFont(font);
      text.setString("Airline Portal");
-     text.setCharacterSize(50);
+     text.setCharacterSize(30);
      text.setFillColor(sf::Color::Black);
-        text.setPosition(400, 250); // Center the text in the window
+        text.setPosition(100, 100); // Center the text in the window
     //Set BackGround console color to white
 
     window.clear(sf::Color::White); // Clear the window with white color

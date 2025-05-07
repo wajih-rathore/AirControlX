@@ -120,7 +120,7 @@ void StripePayment::run()
     // Set the running flag
     running.store(true);
     //Create a sfml 1200 * 600 window "AVN GENERATOR"
-     sf::RenderWindow window(sf::VideoMode(1200, 600), "stripe pay");
+     sf::RenderWindow window(sf::VideoMode(400, 200), "stripe pay");
      window.setVerticalSyncEnabled(true);  // Enable V-Sync to prevent screen tearing
      
      sf::Font font;
@@ -128,9 +128,9 @@ void StripePayment::run()
      sf::Text text;
      text.setFont(font);
      text.setString("Payment Portal");
-     text.setCharacterSize(50);
+     text.setCharacterSize(30);
      text.setFillColor(sf::Color::Black);
-        text.setPosition(400, 250); // Center the text in the window
+        text.setPosition(100, 100); // Center the text in the window
     
         window.clear(sf::Color::White); // Clear the window with white color
     window.draw(text); // Draw the text

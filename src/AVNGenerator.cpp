@@ -114,7 +114,7 @@ bool AVNGenerator::initialize(int atcsToAvn[2], int avnToAirline[2], int stripeT
 void AVNGenerator::run() 
 {
      //Create a sfml 1200 * 600 window "AVN GENERATOR"
-     sf::RenderWindow window(sf::VideoMode(1200, 600), "AVN GENERATOR");
+     sf::RenderWindow window(sf::VideoMode(400, 200), "AVN GENERATOR");
      window.setVerticalSyncEnabled(true);  // Enable V-Sync to prevent screen tearing
      
      sf::Font font;
@@ -122,9 +122,9 @@ void AVNGenerator::run()
      sf::Text text;
      text.setFont(font);
      text.setString("AVN GENERATOR");
-     text.setCharacterSize(50);
+     text.setCharacterSize(30);
      text.setFillColor(sf::Color::White);
-        text.setPosition(400, 250); // Center the text in the window
+        text.setPosition(100, 100); // Center the text in the window
 
     window.draw(text); // Draw the text
 

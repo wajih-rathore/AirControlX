@@ -20,8 +20,17 @@ private:
     // SFML window for our simulation display
     sf::RenderWindow window;
     
+    // Reference to runway manager for runway visualization
+    RunwayManager* runwayMgr;
+    
     //Is the Animation running?
     bool runwayOccupied[3]; // Array to track runway occupancy status
+    int position[3][2]; // Array to track aircraft position on runway
+    int direction[3]; // Array to track aircraft direction on runway ( +1 : North(LEFT) | West(LEFT), -1 : South(RIGHT) | EAST(RIGHT))
+    sf::Sprite aircraftSpriteRunway[3]; // Array to track aircraft sprite on runway
+    sf::Clock animationClockRunways[3]; // Array to track animation clock for each runway
+    std::string aircraftType[3]; // Array to track aircraft type on runway
+    int runway3status = +1; //Emergency Arrival or Departure ( 1 : Arrival, -1 : Departure) 
 
     // Background texture and sprite
     sf::Texture backgroundTexture;
@@ -73,8 +82,6 @@ private:
     // Reference to active aircraft list for visualization
     std::vector<Aircraft*> aircraftList;
     
-    // Reference to runway manager for runway visualization
-    RunwayManager* runwayMgr;
     
     // Screen dimensions
     int screenWidth;
@@ -108,13 +115,17 @@ public:
     bool running() const;
 
     //Landing And Departure Animation
-    void animateLanding(int runwayIndex, int planeType, std::string PlaneType);
-    void animateDeparture(int runwayIndex, int planeType, std::string PlaneType);
+    void animateLanding(int runwayIndex, int planeType, std::string PlaneType, int direction);
+    void animateDeparture(int runwayIndex, int planeType, std::string PlaneType, int direction);
     
-    // Animate aircraft landing
+    // Update aircraft positions on runways    
+    void updateRunway_1_AircraftsPosition();
+    void updateRunway_2_AircraftsPosition();
+    void updateRunway_3_AircraftsPosition();
     
-    // ======== SFML Integration Abstraction Functions ========
-    
+    void checkForArrivalsOrDepartures() ;
+    void Update();
+
     /**
      * Set the list of aircraft to visualize
      * Updates internal reference to aircraft for rendering

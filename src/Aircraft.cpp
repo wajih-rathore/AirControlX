@@ -24,6 +24,7 @@ Aircraft::Aircraft(int index, const std::string& airlineName, AirCraftType aircr
     y_position = -1;
     queueEntryTime = 0;
     hasRunwayAssigned = false;
+    assignedRunwayIndex = 0; // No runway assigned initially
 }
 
 // Destructor for aircraft class

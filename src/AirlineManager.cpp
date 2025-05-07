@@ -39,42 +39,42 @@ void AirlineManager::initialize()
     pia->name = "PIA";
     pia->type = AirCraftType::Commercial;
     pia->maxFlights = 4;
-    pia->aircrafts.reserve(6);
+    pia->aircrafts.reserve(pia->maxFlights );
     
     // Create AirBlue (Commercial)
     Airline* airBlue = new Airline();
     airBlue->name = "AirBlue";
     airBlue->type = AirCraftType::Commercial;
     airBlue->maxFlights = 4;
-    airBlue->aircrafts.reserve(4);
+    airBlue->aircrafts.reserve(airBlue->maxFlights);
     
     // Create FedEx (Cargo)
     Airline* fedEx = new Airline();
     fedEx->name = "FedEx";
     fedEx->type = AirCraftType::Cargo;
     fedEx->maxFlights = 2;
-    fedEx->aircrafts.reserve(3);
+    fedEx->aircrafts.reserve(fedEx->maxFlights);
     
     // Create PakAirforce (Military)
     Airline* pakAirforce = new Airline();
     pakAirforce->name = "Pakistan Airforce";
     pakAirforce->type = AirCraftType::Military;
     pakAirforce->maxFlights = 1;
-    pakAirforce->aircrafts.reserve(2);
+    pakAirforce->aircrafts.reserve(pakAirforce->maxFlights);
     
     // Create BlueDart (Cargo)
     Airline* blueDart = new Airline();
     blueDart->name = "Blue Dart";
     blueDart->type = AirCraftType::Cargo;
     blueDart->maxFlights = 2;
-    blueDart->aircrafts.reserve(2);
+    blueDart->aircrafts.reserve(blueDart->maxFlights);
     
     // Create AghaKhanAir (Medical)
     Airline* aghaKhanAir = new Airline();
     aghaKhanAir->name = "AghaKhan Air";
     aghaKhanAir->type = AirCraftType::Medical;
     aghaKhanAir->maxFlights = 1;
-    aghaKhanAir->aircrafts.reserve(3);
+    aghaKhanAir->aircrafts.reserve(aghaKhanAir->maxFlights);
     
     // Add all airlines to collection
     airlines = {pia, airBlue, fedEx, pakAirforce, blueDart, aghaKhanAir};

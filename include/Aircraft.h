@@ -27,6 +27,7 @@ public:
     int aircraftIndex;         // Tells which index the aircraft belongs to in AirLine
     time_t queueEntryTime;     // When the aircraft entered the queue (for FCFS)
     bool hasRunwayAssigned;    // Whether a runway has been assigned
+    int assignedRunwayIndex;   // Index of the assigned runway (0, 1, 2)
 
     // Constructor
     Aircraft(int index, const std::string& airlineName, AirCraftType aircraftType);

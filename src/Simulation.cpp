@@ -59,6 +59,7 @@ bool Simulation::initialize()
         visualizer->setRunwayManager(runwayManager);  // Set runway manager for visualization
         visualizer->airlines = airlineManager->getAllAirlines();  // Set airlines for visualization
 
+
         // Initialize and start the timer
         timer.setDuration(simulationDuration);
         timer.start();
@@ -81,6 +82,8 @@ bool Simulation::run()
         return false;
     }
     
+    sf::Clock visualclock;
+
     isRunning = true;
     
     try {
@@ -112,7 +115,12 @@ bool Simulation::run()
             if (!isPaused) {
                 update();
             }
-            
+            if(visualclock.getElapsedTime().asSeconds() > 0.04f) {
+                visualclock.restart();
+                // Update aircraft positions and check for arrivals/departures
+                visualizer->checkForArrivalsOrDepartures();
+                visualizer->Update();  // Update visualizer state
+            }
             // Render current state
             visualizer->display();
         }

@@ -73,13 +73,8 @@ vector<Aircraft*> ATCScontroller::getAircraftWithViolations() const
 void ATCScontroller::monitorFlight()
 {
     // Check if it's time to schedule flights
-    time_t currentTime = time(NULL);
-    if (currentTime - lastScheduleTime >= schedulingInterval)
-    {
-        // It's time to schedule flights
-        assignRunway();
-        lastScheduleTime = currentTime;
-    }
+    // No longer using system time, just schedule every call
+    assignRunway();
 }
 
 // Assign runways to aircraft based on priority and availability

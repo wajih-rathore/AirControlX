@@ -108,6 +108,9 @@ bool Simulation::run()
         
         // Main SFML rendering loop
         while (visualizer->running() && !timer.isTimeUp()) {
+            // Update simulation time in the manager
+            simulationManager->updateSimulationTime(timer.getElapsedSeconds());
+            
             // Handle window events (close, keyboard input)
             visualizer->handleEvents();
             

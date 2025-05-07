@@ -39,6 +39,9 @@ private:
     // Flag to control visualization thread
     bool visualizationActive;
     
+    // Simulation timer (in seconds)
+    int simulationTimer;
+    
     // Thread function for aircraft simulation
     static void* flightThreadFunction(void* arg);
     
@@ -67,6 +70,9 @@ public:
     
     // Thread-safe console logging
     void logMessage(const std::string& message);
+    
+    // Update the simulation time
+    void updateSimulationTime(int currentTime);
     
     // ======== SFML Visualization Integration Functions ========
     

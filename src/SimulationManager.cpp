@@ -25,7 +25,7 @@ struct SimulationManager::ATCArgs
  * Constructor initializes threading resources and stores references to shared components
  */
 SimulationManager::SimulationManager(ATCScontroller* atc, RunwayManager* rwm) 
-    : atcController(atc), runwayManager(rwm)
+    : atcController(atc), runwayManager(rwm), simulationTimer(0)
 {
     // Initialize the mutex for thread-safe console output
     pthread_mutex_init(&consoleMutex, nullptr);
@@ -69,27 +69,6 @@ void* SimulationManager::flightThreadFunction(void* arg)
         // Arrival flow - either North or South
         plane->direction = (plane->aircraftIndex % 4 == 0) ? Direction::North : Direction::South;
 
-        //NOTE : WE CAN DO THE POSITION WALA PART OR NOT, TO BE DECIDEDDDDDDDD ????
-        /* Commenting this for now, same for the departures
-        // Randomly generate x and y positions based on direction
-        Was also thinking of adding z(height) and making directions to 360
-        //Getting a bit complicated, but we can add this later
-        //Have to align it with the sprites too
-        // Have to do some math with the speed as well as distance
-        //Monday ko together we do this after classes
-        //Update Position Function has to be added somewhere
-        if(plane->direction == Direction::North) 
-        {
-            plane->x_position = rand() % 1000000; // Random x position for North
-            plane->y_position = 0; // Fixed y position for North
-        }
-        else if(plane->direction == Direction::South) 
-        {
-            plane->x_position = rand() % 100; // Random x position for South
-            plane->y_position = 100; // Fixed y position for South
-        }
-        */
-        
         // For arrivals, start at Holding state
         plane->state = FlightState::Holding;
         
@@ -403,11 +382,14 @@ void SimulationManager::logMessage(const std::string& message)
 {
     pthread_mutex_lock(&consoleMutex);
     
-    // Get the current time for timestamping
-    time_t now = time(nullptr);
-    struct tm *timeinfo = localtime(&now);
+    // Format simulation time as MM:SS
+    int elapsedSeconds = simulationTimer;
+    int minutes = elapsedSeconds / 60;
+    int seconds = elapsedSeconds % 60;
+    
+    // Create a formatted timestamp string
     char timestamp[10];
-    strftime(timestamp, sizeof(timestamp), "[%H:%M:%S]", timeinfo);
+    snprintf(timestamp, sizeof(timestamp), "[%02d:%02d]", minutes, seconds);
     
     // Detect message type and format accordingly
     if (message.find("Flight") != std::string::npos && message.find("runway") != std::string::npos) {
@@ -416,7 +398,7 @@ void SimulationManager::logMessage(const std::string& message)
     }
     else if (message.find("Flight") != std::string::npos && message.find("cruising") != std::string::npos) {
         // Flight status updates
-        std::cout << "\033[1;32m" << timestamp << " [STATUS] " << message << "\033[0m" << std::endl;
+        std::cout << "\033[1;32m" << timestamp << " [INFO] " << message << "\033[0m" << std::endl;
     }
     else if (message.find("EMERGENCY") != std::string::npos) {
         // Emergency messages
@@ -428,9 +410,18 @@ void SimulationManager::logMessage(const std::string& message)
     }
     else {
         // Regular messages
-        std::cout << "\033[1;36m" << timestamp << " [INFO] " << message << "\033[0m" << std::endl;
+        std::cout << "\033[1;32m" << timestamp << " [INFO] " << message << "\033[0m" << std::endl;
     }
     
+    pthread_mutex_unlock(&consoleMutex);
+}
+
+// Add a method to update the simulation timer
+void SimulationManager::updateSimulationTime(int currentTime)
+{
+    // Thread-safe update of the simulation timer
+    pthread_mutex_lock(&consoleMutex);
+    simulationTimer = currentTime;
     pthread_mutex_unlock(&consoleMutex);
 }
 

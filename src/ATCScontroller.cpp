@@ -112,7 +112,7 @@ void ATCScontroller::assignRunway()
     
     // Step 1: First priority is ALWAYS emergency flights
     Aircraft* emergency = scheduler.getNextEmergency();
-    if (emergency != nullptr)
+    if (emergency != nullptr && emergency->isActive && !emergency->hasRunwayAssigned)
     {
         // Try to assign emergency to appropriate runway based on direction
         if ((emergency->direction == Direction::North || emergency->direction == Direction::South) && rwyA_available)
@@ -153,7 +153,7 @@ void ATCScontroller::assignRunway()
         Aircraft* arrival = nullptr;
         while ((arrival = scheduler.getNextArrival()) != nullptr)
         {
-            if (arrival->type == AirCraftType::Cargo)
+            if (arrival->isActive && !arrival->hasRunwayAssigned && arrival->type == AirCraftType::Cargo)
             {
                  cout << "Cargo arrival " << arrival->FlightNumber << " assigned to RWY-C (cargo priority)" <<  endl;
                 rwyC->tryAssign(*arrival);
@@ -163,7 +163,7 @@ void ATCScontroller::assignRunway()
             }
             else
             {
-                // Put it back in the queue if it's not cargo
+                // Put it back in the queue if it's not cargo or already has a runway
                 scheduler.addArrival(arrival);
                 break;  // Only check the first one to maintain priority order
             }
@@ -175,7 +175,7 @@ void ATCScontroller::assignRunway()
             Aircraft* departure = nullptr;
             while ((departure = scheduler.getNextDeparture()) != nullptr)
             {
-                if (departure->type == AirCraftType::Cargo)
+                if (departure->isActive && !departure->hasRunwayAssigned && departure->type == AirCraftType::Cargo)
                 {
                      cout << "Cargo departure " << departure->FlightNumber << " assigned to RWY-C (cargo priority)" <<  endl;
                     rwyC->tryAssign(*departure);
@@ -185,7 +185,7 @@ void ATCScontroller::assignRunway()
                 }
                 else
                 {
-                    // Put it back in the queue if it's not cargo
+                    // Put it back in the queue if it's not cargo or already has a runway
                     scheduler.addDeparture(departure);
                     break;  // Only check the first one to maintain priority order
                 }
@@ -207,7 +207,8 @@ void ATCScontroller::assignRunway()
         Aircraft* arrival = scheduler.getNextArrival();
         if (arrival != nullptr)
         {
-            if (arrival->direction == Direction::North || arrival->direction == Direction::South)
+            if (arrival->isActive && !arrival->hasRunwayAssigned && 
+                (arrival->direction == Direction::North || arrival->direction == Direction::South))
             {
                  cout << "Arrival " << arrival->FlightNumber << " assigned to RWY-A (direction N/S)" <<  endl;
                 rwyA->tryAssign(*arrival);
@@ -215,8 +216,7 @@ void ATCScontroller::assignRunway()
             }
             else
             {
-                // This shouldn't happen based on your simulation setup,
-                // but just in case, put it back in the queue
+                // Put it back in the queue if it doesn't meet the criteria
                 scheduler.addArrival(arrival);
             }
         }
@@ -228,7 +228,8 @@ void ATCScontroller::assignRunway()
         Aircraft* departure = scheduler.getNextDeparture();
         if (departure != nullptr)
         {
-            if (departure->direction == Direction::East || departure->direction == Direction::West)
+            if (departure->isActive && !departure->hasRunwayAssigned && 
+                (departure->direction == Direction::East || departure->direction == Direction::West))
             {
                  cout << "Departure " << departure->FlightNumber 
                           << " assigned to RWY-B (direction E/W)" <<  endl;
@@ -237,8 +238,7 @@ void ATCScontroller::assignRunway()
             }
             else
             {
-                // This shouldn't happen based on your simulation setup,
-                // but just in case, put it back in the queue
+                // Put it back in the queue if it doesn't meet the criteria
                 scheduler.addDeparture(departure);
             }
         }
@@ -251,9 +251,16 @@ void ATCScontroller::assignRunway()
         Aircraft* arrival = scheduler.getNextArrival();
         if (arrival != nullptr)
         {
-             cout << "Overflow arrival " << arrival->FlightNumber  << " assigned to RWY-C (overflow)" <<  endl;
-            rwyC->tryAssign(*arrival);
-            arrival->hasRunwayAssigned = true;
+            if (arrival->isActive && !arrival->hasRunwayAssigned)
+            {
+                cout << "Overflow arrival " << arrival->FlightNumber  << " assigned to RWY-C (overflow)" <<  endl;
+                rwyC->tryAssign(*arrival);
+                arrival->hasRunwayAssigned = true;
+            }
+            else
+            {
+                scheduler.addArrival(arrival);
+            }
         }
         else
         {
@@ -261,9 +268,16 @@ void ATCScontroller::assignRunway()
             Aircraft* departure = scheduler.getNextDeparture();
             if (departure != nullptr)
             {
-                 cout << "Overflow departure " << departure->FlightNumber << " assigned to RWY-C (overflow)" <<  endl;
-                rwyC->tryAssign(*departure);
-                departure->hasRunwayAssigned = true;
+                if (departure->isActive && !departure->hasRunwayAssigned)
+                {
+                    cout << "Overflow departure " << departure->FlightNumber << " assigned to RWY-C (overflow)" <<  endl;
+                    rwyC->tryAssign(*departure);
+                    departure->hasRunwayAssigned = true;
+                }
+                else
+                {
+                    scheduler.addDeparture(departure);
+                }
             }
         }
     }

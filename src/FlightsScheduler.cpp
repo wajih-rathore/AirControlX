@@ -121,8 +121,8 @@ Aircraft* FlightsScheduler::removeNextEmergency()
     arrivalMutex.lock();
     for (size_t i = 0; i < arrivalQueue.size(); i++)
     {
-        // Check if this is an emergency flight
-        if (arrivalQueue[i]->EmergencyNo > 0)
+        // Check if this is an active emergency flight
+        if (arrivalQueue[i]->EmergencyNo > 0 && arrivalQueue[i]->isActive)
         {
             // Calculate its priority score
             int priority = arrivalQueue[i]->calculatePriorityScore();
@@ -154,8 +154,8 @@ Aircraft* FlightsScheduler::removeNextEmergency()
         departureMutex.lock();
         for (size_t i = 0; i < departureQueue.size(); i++)
         {
-            // Check if this is an emergency flight
-            if (departureQueue[i]->EmergencyNo > 0)
+            // Check if this is an active emergency flight
+            if (departureQueue[i]->EmergencyNo > 0 && departureQueue[i]->isActive)
             {
                 // Calculate its priority score
                 int priority = departureQueue[i]->calculatePriorityScore();
@@ -190,7 +190,6 @@ Aircraft* FlightsScheduler::removeNextEmergency()
 // This version just peeks at the queue and doesn't modify it
 Aircraft* FlightsScheduler::getNextEmergency() const
 {
-    // Oh boy, C++ const correctness can be tricky!
     // This version doesn't modify anything, just looks for emergencies
     
     Aircraft* emergencyAircraft = nullptr;
@@ -199,8 +198,8 @@ Aircraft* FlightsScheduler::getNextEmergency() const
     // Check arrivals for emergencies (without modifying the queue)
     for (size_t i = 0; i < arrivalQueue.size(); i++)
     {
-        // Check if this is an emergency flight
-        if (arrivalQueue[i]->EmergencyNo > 0)
+        // Check if this is an active emergency flight 
+        if (arrivalQueue[i]->EmergencyNo > 0 && arrivalQueue[i]->isActive)
         {
             // Calculate its priority score
             int priority = arrivalQueue[i]->calculatePriorityScore();
@@ -219,8 +218,8 @@ Aircraft* FlightsScheduler::getNextEmergency() const
     {
         for (size_t i = 0; i < departureQueue.size(); i++)
         {
-            // Check if this is an emergency flight
-            if (departureQueue[i]->EmergencyNo > 0)
+            // Check if this is an active emergency flight
+            if (departureQueue[i]->EmergencyNo > 0 && departureQueue[i]->isActive)
             {
                 // Calculate its priority score
                 int priority = departureQueue[i]->calculatePriorityScore();

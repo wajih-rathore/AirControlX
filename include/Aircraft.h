@@ -123,6 +123,23 @@ public:
      * Useful for SFML text displays
      */
     std::string getTypeString() const;
+    
+    // ======== Testing Functions ========
+    
+    /**
+     * Enable or disable high probability emergency testing mode
+     * Use this function to demonstrate emergency aircraft handling
+     * 
+     * @param enable - Set to true to increase emergency probability to 80%, false for normal probability
+     */
+    static void setEmergencyTestingMode(bool enable);
+    
+    /**
+     * Check if emergency testing mode is currently enabled
+     * 
+     * @return true if testing mode is enabled, false otherwise
+     */
+    static bool isEmergencyTestingEnabled();
 };
 
 #endif // AIRCONTROLX_AIRCRAFT_H

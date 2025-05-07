@@ -22,6 +22,8 @@ pid_t stripePayPid = -1;
 
 // Flag for testing mode
 bool isTestMode = false;
+// Flag for emergency testing mode
+bool isEmergencyTestMode = true;
 
 // Signal handler to clean up child processes on exit
 void cleanupProcesses(int signal) 
@@ -127,6 +129,19 @@ int main(int argc, char* argv[])
     {
         isTestMode = true;
         std::cout << "Running in test mode" << std::endl;
+    }
+    
+    // Check for emergency testing mode argument
+    for (int i = 1; i < argc; i++)
+    {
+        if (std::string(argv[i]) == "--emergency-test")
+        {
+            isEmergencyTestMode = true;
+            std::cout << "Emergency testing mode ENABLED - High probability of emergency flights!" << std::endl;
+            // Enable the emergency testing mode in the Aircraft class
+            Aircraft::setEmergencyTestingMode(true);
+            break;
+        }
     }
     
     // Set up signal handler for clean termination

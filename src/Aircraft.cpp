@@ -4,6 +4,10 @@
 #include <ctime>
 using namespace std;
 
+// Static flag to force high emergency probability for testing
+// Set this to true when you want to demonstrate emergency handling
+static bool TEST_HIGH_EMERGENCY_PROBABILITY = false;
+
 Aircraft::Aircraft(int index, const std::string& airlineName, AirCraftType aircraftType) {
     aircraftIndex = index;
     Airline = airlineName;
@@ -107,6 +111,12 @@ void Aircraft::checkForEmergency() {
     int chance = rand() % 100;
     
     if (EmergencyNo > 0) return; // Already in emergency
+    
+    // When testing flag is true, use much higher probability (80%)
+    if (TEST_HIGH_EMERGENCY_PROBABILITY && chance < 80) {
+        EmergencyNo = 1 + rand() % 3; // Random emergency level 1-3
+        return;
+    }
     
     switch(direction) {
         case Direction::North: // International Arrivals - 10%
@@ -450,4 +460,23 @@ std::string Aircraft::getTypeString() const
         case AirCraftType::Medical: return "Medical";
         default: return "Unknown";
     }
+}
+
+/**
+ * Enable or disable high probability emergency testing mode
+ * Use this function to demonstrate emergency aircraft handling
+ */
+void Aircraft::setEmergencyTestingMode(bool enable) 
+{
+    // Set the static flag that increases emergency probability
+    TEST_HIGH_EMERGENCY_PROBABILITY = enable;
+}
+
+/**
+ * Check if emergency testing mode is currently enabled
+ */
+bool Aircraft::isEmergencyTestingEnabled() 
+{
+    // Return current state of the testing flag
+    return TEST_HIGH_EMERGENCY_PROBABILITY;
 }

@@ -8,7 +8,7 @@
 #include <vector>
 #include "Aircraft.h"
 #include "RunwayManager.h"
-
+#include "Airline.h"
 /**
  * VisualSimulator class for graphical representation of the simulation.
  * Handles loading graphics and displaying the simulation visually.
@@ -16,9 +16,13 @@
 class VisualSimulator 
 {
 private:
+
     // SFML window for our simulation display
     sf::RenderWindow window;
     
+    //Is the Animation running?
+    bool runwayOccupied[3]; // Array to track runway occupancy status
+
     // Background texture and sprite
     sf::Texture backgroundTexture;
     sf::Sprite backgroundSprite;
@@ -84,6 +88,9 @@ private:
     void renderStatusPanel();
 
 public:
+
+    std::vector<Airline*> airlines;
+
     // Constructor and destructor
     VisualSimulator();
     ~VisualSimulator();
@@ -99,6 +106,12 @@ public:
     
     // Check if window is still running
     bool running() const;
+
+    //Landing And Departure Animation
+    void animateLanding(int runwayIndex, int planeType, std::string PlaneType);
+    void animateDeparture(int runwayIndex, int planeType, std::string PlaneType);
+    
+    // Animate aircraft landing
     
     // ======== SFML Integration Abstraction Functions ========
     

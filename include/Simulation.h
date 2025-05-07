@@ -14,7 +14,7 @@
 #include "SimulationManager.h"
 #include "RunwayManager.h"
 #include "ATCScontroller.h"
-#include "visual/Visualizer.h"
+#include "VisualSimulator.h"
 #include "Timer.h"
 
 /**
@@ -29,7 +29,7 @@ private:
     RunwayManager* runwayManager;
     SimulationManager* simulationManager;
     ATCScontroller* atcController;
-    Visualizer* visualizer;  // SFML visualization component
+    VisualSimulator* visualizer;  // SFML visualization component
     Timer timer;             // Timer for simulation duration
     
     // Simulation parameters

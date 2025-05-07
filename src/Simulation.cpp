@@ -11,7 +11,7 @@ Simulation::Simulation()
     runwayManager = new RunwayManager();
     atcController = new ATCScontroller();
     simulationManager = new SimulationManager(atcController, runwayManager);
-    visualizer = new Visualizer();  // Create the visualizer component
+    visualizer = new VisualSimulator();  // Create the visualizer component
     
     // Set default simulation parameters
     simulationDuration = 300; // 5 minutes
@@ -55,15 +55,10 @@ bool Simulation::initialize()
         // Set the runway manager in the ATC controller
         atcController->setRunwayManager(runwayManager);
         
-        // Initialize the visualizer
-        if (!visualizer->initialize()) {
-            std::cerr << "Failed to initialize visualizer!" << std::endl;
-            return false;
-        }
-        
-        // Connect simulation to visualizer (for data access)
-        visualizer->setSimulation(this);
-        
+        visualizer->loadGraphics();  // Load graphics for visualization
+        visualizer->setRunwayManager(runwayManager);  // Set runway manager for visualization
+        visualizer->airlines = airlineManager->getAllAirlines();  // Set airlines for visualization
+
         // Initialize and start the timer
         timer.setDuration(simulationDuration);
         timer.start();
@@ -109,7 +104,7 @@ bool Simulation::run()
         std::cout << "All aircraft launched, simulation running..." << std::endl;
         
         // Main SFML rendering loop
-        while (visualizer->isRunning() && !timer.isTimeUp()) {
+        while (visualizer->running() && !timer.isTimeUp()) {
             // Handle window events (close, keyboard input)
             visualizer->handleEvents();
             
@@ -119,7 +114,7 @@ bool Simulation::run()
             }
             
             // Render current state
-            visualizer->render();
+            visualizer->display();
         }
         
         isRunning = false;

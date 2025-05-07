@@ -4,6 +4,8 @@
 #include "../include/RunwayManager.h"
 #include "../include/AirlinePortal.h"
 #include "../include/StripePayment.h"
+#include "../include/SimulationManager.h"
+#include "../include/Simulation.h"
 #include <iostream>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -252,15 +254,6 @@ int main(int argc, char* argv[])
     close(airlineToStripePipe[0]); // Parent doesn't read from Airline->StripePay pipe
     close(airlineToStripePipe[1]); // Parent doesn't write to Airline->StripePay pipe
 
-    // Set up ATCS Controller with pipe to AVN Generator
-    ATCScontroller atcsController;
-    RunwayManager runwayManager;
-    
-    // Connect the controller to the runway manager
-    atcsController.setRunwayManager(&runwayManager);
-    
-    // Set the pipe for sending violations to AVN Generator
-    atcsController.setAVNPipe(atcsToAvnPipe[1]);
     
     // If we're in test mode, just run the tests and exit
     if (isTestMode)
@@ -279,20 +272,13 @@ int main(int argc, char* argv[])
         return 0;
     }
     
-    // Create our visual simulator
-    VisualSimulator visualSim;
+    Simulation sim;
+    sim.initialize();
+    sim.run();
+    sim.waitForCompletion();
     
-    // Try to load the graphics resources
-    if (!visualSim.loadGraphics()) 
-    {
-        std::cerr << "Failed to load graphics resources. Exiting." << std::endl;
-        cleanupProcesses(0);  // Clean up before exiting
-        return 1;
-    }
-    
-    std::cout << "SFML window created successfully!" << std::endl;
-    std::cout << "Press ESC key to close the window." << std::endl;
-    
+
+    /*
     // Main game loop - keep rendering while the window is open
     while (visualSim.running()) 
     {
@@ -312,6 +298,7 @@ int main(int argc, char* argv[])
     }
     
     std::cout << "Window closed. Cleaning up..." << std::endl;
+    */
     
     // Clean up processes and exit
     cleanupProcesses(0);
